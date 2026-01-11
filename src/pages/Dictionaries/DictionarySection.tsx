@@ -1,6 +1,6 @@
 import { GridColDef } from '@mui/x-data-grid';
 import { Box, Typography, IconButton, Chip } from '@mui/material';
-import { Edit as EditIcon, Block as BlockIcon } from '@mui/icons-material';
+import { Block as BlockIcon } from '@mui/icons-material';
 import { DataTable } from '@/components/common/DataTable';
 import { dictionariesAPI } from '@/api/mock';
 import type { DictionaryType, DictionaryItem } from '@/types';

@@ -8,10 +8,8 @@ import {
   FormControlLabel,
   Checkbox,
   Paper,
-  Stack,
   Grid,
   MenuItem,
-  Divider,
 } from '@mui/material';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import { MainLayout } from '@/components/Layout/MainLayout';

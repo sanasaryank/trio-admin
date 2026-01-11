@@ -1,4 +1,3 @@
-import { initializeStorage } from './storage';
 import { initializeSeeds } from './seeds';
 import { STORAGE_KEYS } from '@/utils/constants';
 

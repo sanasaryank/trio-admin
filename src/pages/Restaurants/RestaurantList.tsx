@@ -14,7 +14,6 @@ import { DataTable } from '@/components/common/DataTable';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { restaurantsAPI, dictionariesAPI } from '@/api/mock';
 import type { Restaurant, FilterStatus } from '@/types';
-import { formatTimestamp } from '@/utils/dateFormat';
 
 /**
  * Restaurant list page
