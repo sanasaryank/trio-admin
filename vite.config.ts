@@ -26,6 +26,13 @@ export default defineConfig({
     port: 5173,
     host: true,
     open: true,
+    proxy: {
+      '/admin': {
+        target: 'https://dev.getmenu.am',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 
   // Build configuration

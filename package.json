@@ -1,5 +1,5 @@
 {
-  "name": "trio_admin",
+  "name": "trio_superadmin",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -16,13 +16,16 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.2",
+    "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
+    "@types/qrcode.react": "^1.0.5",
     "date-fns": "^4.1.0",
     "i18next": "^25.7.4",
     "i18next-browser-languagedetector": "^8.2.0",
     "leaflet": "^1.9.4",
     "notistack": "^3.0.2",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.71.0",
@@ -50,7 +53,7 @@
     "jsdom": "^27.4.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4",
+    "vite": "^7.3.1",
     "vitest": "^4.0.16"
   }
 }
