@@ -1,28 +1,28 @@
-import { mockDictionariesApi } from '../mock';
+import { realDictionariesApi } from '../real';
 import type { DictionaryKey, DictionaryItemType, DictionaryFormData } from '../../types';
 
 export const dictionariesApi = {
   list: (dictKey: DictionaryKey): Promise<DictionaryItemType[]> => {
-    return mockDictionariesApi.list(dictKey);
+    return realDictionariesApi.list(dictKey);
   },
 
-  getById: (dictKey: DictionaryKey, id: number): Promise<DictionaryItemType> => {
-    return mockDictionariesApi.getById(dictKey, id);
+  getById: (dictKey: DictionaryKey, id: string): Promise<DictionaryItemType> => {
+    return realDictionariesApi.getById(dictKey, id);
   },
 
   create: (dictKey: DictionaryKey, data: DictionaryFormData): Promise<DictionaryItemType> => {
-    return mockDictionariesApi.create(dictKey, data);
+    return realDictionariesApi.create(dictKey, data);
   },
 
   update: (
     dictKey: DictionaryKey,
-    id: number,
+    id: string,
     data: DictionaryFormData
   ): Promise<DictionaryItemType> => {
-    return mockDictionariesApi.update(dictKey, id, data);
+    return realDictionariesApi.update(dictKey, id, data);
   },
 
-  block: (dictKey: DictionaryKey, id: number, blocked: boolean): Promise<DictionaryItemType> => {
-    return mockDictionariesApi.block(dictKey, id, blocked);
+  block: (dictKey: DictionaryKey, id: string, isBlocked: boolean): Promise<DictionaryItemType> => {
+    return realDictionariesApi.block(dictKey, id, isBlocked);
   },
 };

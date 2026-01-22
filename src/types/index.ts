@@ -1,9 +1,18 @@
 // Base types
 export interface BaseEntity {
-  id: number;
-  blocked: boolean;
-  createdAt: number; // Unix timestamp (seconds)
-  updatedAt: number; // Unix timestamp (seconds)
+  id: string;
+  isBlocked: boolean;
+}
+
+export interface EntityWithHash extends BaseEntity {
+  hash: string;
+}
+
+// Dictionary multilingual name
+export interface DictionaryName {
+  ARM: string;
+  RUS: string;
+  ENG: string;
 }
 
 // Employee
@@ -16,38 +25,56 @@ export interface Employee extends BaseEntity {
 
 // Dictionary types
 export interface DictionaryItem extends BaseEntity {
+  name: DictionaryName;
+  description?: string;
+}
+
+// Geographic data types (have simple string names)
+export interface Country extends BaseEntity {
   name: string;
+  description?: string;
 }
 
-export interface Country extends DictionaryItem {}
-
-export interface City extends DictionaryItem {
-  countryId: number;
+export interface City extends BaseEntity {
+  name: string;
+  countryId: string;
 }
 
-export interface District extends DictionaryItem {
-  cityId: number;
+export interface District extends BaseEntity {
+  name: string;
+  cityId: string;
 }
 
+// Business dictionary types (have multilingual names)
 export interface RestaurantType extends DictionaryItem {}
 export interface PriceSegment extends DictionaryItem {}
 export interface MenuType extends DictionaryItem {}
 export interface IntegrationType extends DictionaryItem {}
+export interface Placement extends DictionaryItem {
+  rotation: number; // seconds
+  refreshTtl: number; // seconds
+  noAdjacentSameAdvertiser: boolean;
+}
 
 export type DictionaryKey =
   | 'restaurant-types'
   | 'price-segments'
   | 'menu-types'
   | 'integration-types'
+  | 'placements'
+  | 'locations'
   | 'countries'
   | 'cities'
   | 'districts';
+
+export type Dictionary = DictionaryItem;
 
 export type DictionaryItemType =
   | RestaurantType
   | PriceSegment
   | MenuType
   | IntegrationType
+  | Placement
   | Country
   | City
   | District;
@@ -60,30 +87,55 @@ export interface ConnectionData {
   password?: string; // Optional when editing
 }
 
-export interface Restaurant extends BaseEntity {
-  name: string;
+// Restaurant list item (simplified for list view)
+export interface RestaurantListItem extends BaseEntity {
+  name: string | DictionaryName;
   crmUrl: string;
-  countryId: number;
-  cityId: number;
-  districtId: number;
-  address: string;
+  cityName: string;
+  districtName: string;
+}
+
+// Restaurant detail (full data for edit/view)
+export interface Restaurant extends EntityWithHash {
+  name: DictionaryName;
+  crmUrl: string;
+  countryId: string;
+  cityId: string;
+  districtId: string;
+  legalAddress: string;
+  tin: string;
   lat: number;
   lng: number;
-  typeId: number; // restaurant-types
-  priceSegmentId: number; // price-segments
-  menuTypeId: number; // menu-types
-  integrationTypeId: number; // integration-types
+  typeId: string[]; // restaurant-types
+  priceSegmentId: string[]; // price-segments
+  menuTypeId: string[]; // menu-types
+  integrationTypeId: string; // integration-types
   adminEmail: string;
+  adminUsername: string;
+  adminPassword?: string; // Optional when editing
   connectionData: ConnectionData;
-  lastClientActivityAt?: number; // Unix timestamp (seconds)
-  lastRestaurantActivityAt?: number; // Unix timestamp (seconds)
+}
+
+// Locations response for geography data
+export interface LocationsResponse {
+  countries: Country[];
+  cities: City[];
+  districts: District[];
 }
 
 // QR Code
+export type QRType = 'Static' | 'Dynamic';
+
 export interface QRCode extends BaseEntity {
-  restaurantId: number;
-  qrText: string;
-  tableNumber?: string; // Comes from integration, not editable
+  hallId: string; // Comes from integration system
+  tableId: string; // Comes from integration system
+  qrText: string; // Comes from integration system
+  type: QRType;
+}
+
+export interface QRBatchCreateRequest {
+  count: number;
+  type: QRType;
 }
 
 // Audit Log
@@ -101,23 +153,26 @@ export type AuditEntityType =
   | 'restaurant'
   | 'qr'
   | 'dictionary'
-  | 'user';
+  | 'user'
+  | 'advertiser'
+  | 'campaign'
+  | 'creative';
 
 export interface AuditEvent {
-  id: number;
+  id: string;
   timestamp: number; // Unix timestamp (seconds)
-  actorId: number;
+  actorId: string;
   actorName: string;
   action: AuditAction;
   entityType: AuditEntityType;
-  entityId: number | string;
+  entityId: string;
   entityLabel: string;
   metadata?: Record<string, unknown>;
 }
 
 // Auth
 export interface User {
-  id: number;
+  id?: string;
   username: string;
   firstName: string;
   lastName: string;
@@ -129,7 +184,11 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  user: User;
+  username: string;
+  firstName: string;
+  lastName: string;
+  token: string;
+  expires: string;
 }
 
 // API Response types
@@ -151,13 +210,13 @@ export interface EmployeeFilters {
 export interface RestaurantFilters {
   search: string;
   status: 'active' | 'blocked' | 'all';
-  countryId?: number;
-  cityId?: number;
-  districtId?: number;
-  typeId?: number;
-  priceSegmentId?: number;
-  menuTypeId?: number;
-  integrationTypeId?: number;
+  countryId?: string;
+  cityId?: string;
+  districtId?: string;
+  typeId?: string[];
+  priceSegmentId?: string[];
+  menuTypeId?: string[];
+  integrationTypeId?: string;
 }
 
 export interface DictionaryFilters {
@@ -166,28 +225,34 @@ export interface DictionaryFilters {
 
 // Form types
 export interface EmployeeFormData {
+  hash?: string; // Required for updates
   firstName: string;
   lastName: string;
-  username: string;
+  username?: string; // Required only for creation, not sent in updates
   password?: string; // Optional when editing
   changePassword?: boolean; // Flag for edit mode
-  blocked: boolean;
+  isBlocked: boolean;
 }
 
 export interface RestaurantFormData {
-  name: string;
+  hash?: string; // Required for updates
+  name: DictionaryName;
   crmUrl: string;
-  countryId: number;
-  cityId: number;
-  districtId: number;
-  address: string;
+  countryId: string;
+  cityId: string;
+  districtId: string;
+  legalAddress: string;
+  tin: string;
   lat: number;
   lng: number;
-  typeId: number;
-  priceSegmentId: number;
-  menuTypeId: number;
-  integrationTypeId: number;
+  typeId: string[];
+  priceSegmentId: string[];
+  menuTypeId: string[];
+  integrationTypeId: string;
   adminEmail: string;
+  adminUsername: string;
+  adminPassword: string;
+  adminChangePassword: boolean;
   connectionData: {
     host: string;
     port: number;
@@ -195,16 +260,178 @@ export interface RestaurantFormData {
     password: string;
     changePassword: boolean;
   };
-  blocked: boolean;
+  isBlocked: boolean;
 }
 
 export interface DictionaryFormData {
-  name: string;
-  blocked: boolean;
-  countryId?: number; // For cities
-  cityId?: number; // For districts
+  hash?: string; // Required for updates
+  name: DictionaryName | string; // DictionaryName for dictionaries, string for geographic data
+  isBlocked: boolean;
+  description?: string;
+  countryId?: string; // For cities
+  cityId?: string; // For districts
+  rotation?: number; // For placements
+  refreshTtl?: number; // For placements
+  noAdjacentSameAdvertiser?: boolean; // For placements
 }
 
-export interface QRBatchCreateRequest {
-  count: number;
+// Advertisement types
+export interface Advertiser extends BaseEntity {
+  name: string;
+  tin: string; // Tax Identification Number
+}
+
+export interface Campaign extends BaseEntity {
+  advertiserId: string;
+  name: string;
+  startDate: number; // Unix timestamp (seconds)
+  endDate: number; // Unix timestamp (seconds)
+  budget: number;
+  budgetDaily: number;
+  price: number;
+  pricingModel: 'CPM' | 'CPC' | 'CPV' | 'CPA';
+  spendStrategy: 'even' | 'asap' | 'frontload';
+  frequencyCapStrategy: 'soft' | 'strict';
+  frequencyCap: {
+    per_user: {
+      impressions: { count: number; window_sec: number };
+      clicks: { count: number; window_sec: number };
+    };
+    per_session: {
+      impressions: { count: number; window_sec: number };
+      clicks: { count: number; window_sec: number };
+    };
+  };
+  priority: number;
+  weight: number;
+  overdeliveryRatio: number; // percentage
+  locationsMode: 'allowed' | 'denied';
+  locations: string[]; // district IDs, empty = All
+  restaurantTypesMode: 'allowed' | 'denied';
+  restaurantTypes: string[]; // restaurant type IDs, empty = All
+  menuTypesMode: 'allowed' | 'denied';
+  menuTypes: string[]; // menu type IDs, empty = All
+  placements: string[]; // ads slot IDs, empty = All
+  targets: CampaignTarget[];
+}
+
+export interface CampaignTarget {
+  id: string; // restaurant id
+  slots: CampaignTargetSlot[];
+}
+
+export interface CampaignTargetSlot {
+  id: string; // slot id
+  schedules: string[]; // schedule ids
+}
+
+export interface Creative extends BaseEntity {
+  campaignId: string;
+  name: string;
+  minHeight: number;
+  maxHeight: number;
+  minWidth: number;
+  maxWidth: number;
+  dataUrl: string;
+  htmlContent?: string; // Optional inline HTML content (overrides dataUrl if present)
+  previewWidth: number;
+  previewHeight: number;
+}
+
+export interface DaySchedule {
+  day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
+  enabled: boolean;
+  startTime: string; // HH:mm format
+  endTime: string; // HH:mm format
+}
+
+export interface Schedule extends BaseEntity {
+  name: string;
+  color: string; // hex color
+  weekSchedule: DaySchedule[];
+}
+
+// Advertisement filters
+export interface AdvertiserFilters {
+  search: string;
+  status: 'active' | 'blocked' | 'all';
+}
+
+export interface CampaignFilters {
+  search: string;
+  status: 'active' | 'blocked' | 'all';
+  advertiserId?: string;
+}
+
+export interface CreativeFilters {
+  status: 'active' | 'blocked' | 'all';
+  campaignId?: string;
+  advertiserId?: string;
+}
+
+// Advertisement form data
+export interface AdvertiserFormData {
+  hash?: string; // Required for updates
+  name: string;
+  tin: string;
+  blocked: boolean;
+}
+
+export interface CampaignFormData {
+  hash?: string; // Required for updates
+  advertiserId: string;
+  name: string;
+  startDate: number;
+  endDate: number;
+  budget: number;
+  budgetDaily: number;
+  price: number;
+  pricingModel: 'CPM' | 'CPC' | 'CPV' | 'CPA';
+  spendStrategy: 'even' | 'asap' | 'frontload';
+  frequencyCapStrategy: 'soft' | 'strict';
+  frequencyCap: {
+    per_user: {
+      impressions: { count: number; window_sec: number };
+      clicks: { count: number; window_sec: number };
+    };
+    per_session: {
+      impressions: { count: number; window_sec: number };
+      clicks: { count: number; window_sec: number };
+    };
+  };
+  priority: number;
+  weight: number;
+  overdeliveryRatio: number;
+  locationsMode: 'allowed' | 'denied';
+  locations: string[];
+  restaurantTypesMode: 'allowed' | 'denied';
+  restaurantTypes: string[];
+  menuTypesMode: 'allowed' | 'denied';
+  menuTypes: string[];
+  placements: string[];
+  targets: CampaignTarget[];
+  blocked: boolean;
+}
+
+export interface CreativeFormData {
+  hash?: string; // Required for updates
+  campaignId: string;
+  name: string;
+  minHeight: number;
+  maxHeight: number;
+  minWidth: number;
+  maxWidth: number;
+  dataUrl: string;
+  htmlContent?: string; // Optional inline HTML content (overrides dataUrl if present)
+  previewWidth: number;
+  previewHeight: number;
+  blocked: boolean;
+}
+
+export interface ScheduleFormData {
+  hash?: string; // Required for updates
+  name: string;
+  color: string;
+  weekSchedule: DaySchedule[];
+  blocked: boolean;
 }

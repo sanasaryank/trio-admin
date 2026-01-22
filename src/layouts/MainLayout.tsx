@@ -54,12 +54,9 @@ const getMenuItems = (): MenuItem[] => [
     children: [
       { id: 'employees', labelKey: 'menu.employees', icon: null, path: '/employees' },
       { id: 'restaurant-types', labelKey: 'menu.restaurantTypes', icon: null, path: '/dictionaries/restaurant-types' },
-      { id: 'price-segments', labelKey: 'menu.priceSegments', icon: null, path: '/dictionaries/price-segments' },
       { id: 'menu-types', labelKey: 'menu.menuTypes', icon: null, path: '/dictionaries/menu-types' },
+      { id: 'price-segments', labelKey: 'menu.priceSegments', icon: null, path: '/dictionaries/price-segments' },
       { id: 'integration-types', labelKey: 'menu.integrationTypes', icon: null, path: '/dictionaries/integration-types' },
-      { id: 'countries', labelKey: 'menu.countries', icon: null, path: '/dictionaries/countries' },
-      { id: 'cities', labelKey: 'menu.cities', icon: null, path: '/dictionaries/cities' },
-      { id: 'districts', labelKey: 'menu.districts', icon: null, path: '/dictionaries/districts' },
     ],
   },
   {
@@ -166,12 +163,16 @@ export const MainLayout = () => {
 
   const drawer = (
     <Box>
-      <Toolbar sx={{ justifyContent: 'center', py: 3 }}>
-        <img
+      <Toolbar sx={{ justifyContent: 'center', gap: 1 }}>
+        <Box
+          component="img"
           src="/logo.svg"
-          alt="TRIO"
-          style={{ height: 32 }}
+          alt="TRIO Admin Logo"
+          sx={{ height: 32, width: 'auto' }}
         />
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          TRIO Admin
+        </Typography>
       </Toolbar>
       <Divider />
       <List sx={{ px: 2 }}>

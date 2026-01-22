@@ -10,6 +10,10 @@ export interface ConfirmDialogConfig {
   message: string;
   /** Function to call when user confirms */
   onConfirm: () => void;
+  /** Text for confirm button */
+  confirmText?: string;
+  /** Text for cancel button */
+  cancelText?: string;
 }
 
 /**
@@ -26,6 +30,10 @@ export interface ConfirmDialogProps {
   onConfirm: () => void;
   /** Cancel handler */
   onCancel: () => void;
+  /** Text for confirm button */
+  confirmText?: string;
+  /** Text for cancel button */
+  cancelText?: string;
 }
 
 /**
@@ -99,6 +107,8 @@ function useConfirmDialog(): UseConfirmDialogReturn {
     message: config.message,
     onConfirm: confirm,
     onCancel: close,
+    confirmText: config.confirmText,
+    cancelText: config.cancelText,
   };
 
   return {

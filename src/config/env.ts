@@ -12,7 +12,6 @@ interface EnvironmentConfig {
   // API
   apiBaseUrl: string;
   apiTimeout: number;
-  useMockApi: boolean;
 
   // Features
   enableAuditLog: boolean;
@@ -78,7 +77,6 @@ export const env: EnvironmentConfig = {
   // API
   apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://localhost:3000/api'),
   apiTimeout: getEnvNumber('VITE_API_TIMEOUT', 30000),
-  useMockApi: getEnvBoolean('VITE_USE_MOCK_API', true),
 
   // Features
   enableAuditLog: getEnvBoolean('VITE_ENABLE_AUDIT_LOG', true),

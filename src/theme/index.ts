@@ -226,6 +226,13 @@ export const theme: Theme = createTheme({
         },
       },
     },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          borderRadius: 0,
+        },
+      },
+    },
     MuiDialog: {
       styleOverrides: {
         paper: {

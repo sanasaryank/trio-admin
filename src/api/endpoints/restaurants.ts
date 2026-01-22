@@ -1,36 +1,45 @@
-import { mockRestaurantsApi } from '../mock';
-import type { Restaurant, RestaurantFormData, QRCode, QRBatchCreateRequest } from '../../types';
+import { realRestaurantsApi } from '../real';
+import type { Restaurant, RestaurantListItem, RestaurantFormData, QRCode, QRBatchCreateRequest, QRType, LocationsResponse } from '../../types';
 
+// Always use real API
 export const restaurantsApi = {
-  list: (): Promise<Restaurant[]> => {
-    return mockRestaurantsApi.list();
+  list: (): Promise<RestaurantListItem[]> => {
+    return realRestaurantsApi.list();
   },
 
-  getById: (id: number): Promise<Restaurant> => {
-    return mockRestaurantsApi.getById(id);
+  getById: (id: string): Promise<Restaurant> => {
+    return realRestaurantsApi.getById(id);
   },
 
   create: (data: RestaurantFormData): Promise<Restaurant> => {
-    return mockRestaurantsApi.create(data);
+    return realRestaurantsApi.create(data);
   },
 
-  update: (id: number, data: RestaurantFormData): Promise<Restaurant> => {
-    return mockRestaurantsApi.update(id, data);
+  update: (id: string, data: RestaurantFormData): Promise<Restaurant> => {
+    return realRestaurantsApi.update(id, data);
   },
 
-  block: (id: number, blocked: boolean): Promise<Restaurant> => {
-    return mockRestaurantsApi.block(id, blocked);
+  block: (id: string, isBlocked: boolean): Promise<Restaurant> => {
+    return realRestaurantsApi.block(id, isBlocked);
   },
 
-  getQRCodes: (restaurantId: number): Promise<QRCode[]> => {
-    return mockRestaurantsApi.getQRCodes(restaurantId);
+  getQRCodes: (restaurantId: string): Promise<QRCode[]> => {
+    return realRestaurantsApi.getQRCodes(restaurantId);
   },
 
-  createQRBatch: (restaurantId: number, request: QRBatchCreateRequest): Promise<QRCode[]> => {
-    return mockRestaurantsApi.createQRBatch(restaurantId, request);
+  createQRBatch: (restaurantId: string, request: QRBatchCreateRequest): Promise<QRCode[]> => {
+    return realRestaurantsApi.createQRBatch(restaurantId, request);
   },
 
-  blockQR: (restaurantId: number, qrId: number, blocked: boolean): Promise<QRCode> => {
-    return mockRestaurantsApi.blockQR(restaurantId, qrId, blocked);
+  blockQR: (restaurantId: string, qrId: string, isBlocked: boolean): Promise<QRCode> => {
+    return realRestaurantsApi.blockQR(restaurantId, qrId, isBlocked);
+  },
+
+  updateQRType: (restaurantId: string, qrId: string, type: QRType): Promise<QRCode> => {
+    return realRestaurantsApi.updateQRType(restaurantId, qrId, type);
+  },
+
+  getLocations: (): Promise<LocationsResponse> => {
+    return realRestaurantsApi.getLocations();
   },
 };

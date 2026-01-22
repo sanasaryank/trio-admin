@@ -51,34 +51,41 @@ function App() {
           <BrowserRouter>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <MainLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/restaurants" replace />} />
-            <Route path="employees" element={<EmployeesListPage />} />
-            <Route path="employees/new" element={<EmployeeFormPage />} />
-            <Route path="employees/:id/edit" element={<EmployeeFormPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <MainLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/restaurants" replace />} />
+                  
+                  {/* Restaurants */}
+                  <Route path="restaurants" element={<RestaurantsListPage />} />
+                  <Route path="restaurants/new" element={<RestaurantFormPage />} />
+                  <Route path="restaurants/:id/edit" element={<RestaurantFormPage />} />
+                  <Route path="restaurants/:id/qr" element={<RestaurantQRPage />} />
 
-            <Route path="restaurants" element={<RestaurantsListPage />} />
-            <Route path="restaurants/new" element={<RestaurantFormPage />} />
-            <Route path="restaurants/:id/edit" element={<RestaurantFormPage />} />
-            <Route path="restaurants/:id/qr" element={<RestaurantQRPage />} />
+                  {/* Employees */}
+                  <Route path="employees" element={<EmployeesListPage />} />
+                  <Route path="employees/new" element={<EmployeeFormPage />} />
+                  <Route path="employees/:id/edit" element={<EmployeeFormPage />} />
 
-            <Route path="dictionaries/:dictKey" element={<DictionariesPage />} />
+                  {/* Dictionaries */}
+                  <Route path="dictionaries/:dictKey" element={<DictionariesPage />} />
 
-            <Route path="statistics/:section" element={<StatisticsPage />} />
-          </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
+                  {/* Statistics */}
+                  <Route path="statistics/:section" element={<StatisticsPage />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
         </SnackbarProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
-}export default App;
+}
+
+export default App;

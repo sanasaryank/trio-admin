@@ -28,9 +28,9 @@ interface SelectProps {
   /** Метка поля */
   label: string;
   /** Выбранное значение */
-  value: string | number;
+  value: string | number | number[];
   /** Обработчик изменения */
-  onChange: (value: string | number) => void;
+  onChange: (value: string | number | number[]) => void;
   /** Список опций */
   options: SelectOption[];
   /** Есть ошибка */
@@ -45,6 +45,8 @@ interface SelectProps {
   fullWidth?: boolean;
   /** Placeholder */
   placeholder?: string;
+  /** Множественный выбор */
+  multiple?: boolean;
 }
 
 /**
@@ -78,8 +80,14 @@ const Select: React.FC<SelectProps> = React.memo(({
   disabled = false,
   fullWidth = true,
   placeholder,
+  multiple = false,
 }) => {
   const labelId = `${name}-label`;
+
+  // Ensure value is always the correct type based on multiple prop
+  const normalizedValue = multiple 
+    ? (Array.isArray(value) ? value : [])
+    : (value ?? '');
 
   return (
     <FormControl
@@ -93,12 +101,13 @@ const Select: React.FC<SelectProps> = React.memo(({
       <MuiSelect
         labelId={labelId}
         name={name}
-        value={value}
+        value={normalizedValue}
         label={label}
         onChange={(e) => onChange(e.target.value)}
         displayEmpty={!!placeholder}
+        multiple={multiple}
       >
-        {placeholder && (
+        {placeholder && !multiple && (
           <MenuItem value="" disabled>
             {placeholder}
           </MenuItem>

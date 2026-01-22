@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, Box, Alert, CircularProgress, IconButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, Box, Alert, CircularProgress, IconButton, InputAdornment, Typography } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +12,7 @@ import type { DictionaryKey, DictionaryFormData, Country, City, District } from 
 
 // Reusable components
 import Button from '../ui/atoms/Button';
+import TextField from '../ui/atoms/TextField';
 import FormField from '../ui/molecules/FormField';
 import Select from '../ui/atoms/Select';
 
@@ -21,7 +22,7 @@ import useFetch from '../../hooks/useFetch';
 interface DictionaryFormDialogProps {
   open: boolean;
   dictKey: DictionaryKey;
-  itemId?: number;
+  itemId?: string;
   onClose: () => void;
   onSave: () => void;
 }
@@ -29,20 +30,40 @@ interface DictionaryFormDialogProps {
 const createValidationSchema = (dictKey: DictionaryKey, t: (key: string) => string) => {
   const config = getDictionaryFieldsConfig(dictKey);
 
+  // For dictionaries, use multilingual name structure
+  const isGeographicData = ['countries', 'cities', 'districts'].includes(dictKey);
+  
+  const nameSchema = isGeographicData 
+    ? z.string().min(1, t('validation.nameRequired'))
+    : z.object({
+        ARM: z.string().min(1, t('validation.nameRequired')),
+        RUS: z.string().min(1, t('validation.nameRequired')),
+        ENG: z.string().min(1, t('validation.nameRequired')),
+      });
+
   let schema = z.object({
-    name: z.string().min(1, t('validation.nameRequired')),
-    blocked: z.boolean(),
+    name: nameSchema,
+    isBlocked: z.boolean(),
+    ...(isGeographicData ? {} : { description: z.string().optional() }),
   });
 
   if (config.hasCountrySelector) {
     schema = schema.extend({
-      countryId: z.number().min(1, t('validation.required')),
+      countryId: z.string().min(1, t('validation.required')),
     });
   }
 
   if (config.hasCitySelector) {
     schema = schema.extend({
       cityId: z.number().min(1, t('validation.required')),
+    });
+  }
+
+  if (config.hasPlacementFields) {
+    schema = schema.extend({
+      rotation: z.number().min(1, t('validation.required')),
+      refreshTtl: z.number().min(1, t('validation.required')),
+      noAdjacentSameAdvertiser: z.boolean(),
     });
   }
 
@@ -60,9 +81,10 @@ export const DictionaryFormDialog = ({
   const { enqueueSnackbar } = useSnackbar();
   const isEditMode = itemId !== undefined;
   const config = useMemo(() => getDictionaryFieldsConfig(dictKey), [dictKey]);
+  const isGeographicData = ['countries', 'cities', 'districts'].includes(dictKey);
 
   const [error, setError] = useState<string | null>(null);
-  const [selectedCountryId, setSelectedCountryId] = useState<number | null>(null);
+  const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null);
 
   const validationSchema = useMemo(() => createValidationSchema(dictKey, t), [dictKey, t]);
   type FormData = z.infer<typeof validationSchema>;
@@ -77,22 +99,29 @@ export const DictionaryFormDialog = ({
   } = useForm<FormData>({
     resolver: zodResolver(validationSchema),
     defaultValues: {
-      name: '',
-      blocked: false,
-      ...(config.hasCountrySelector && { countryId: 0 }),
-      ...(config.hasCitySelector && { cityId: 0 }),
-    },
+      name: isGeographicData ? '' : { ARM: '', RUS: '', ENG: '' },
+      isBlocked: false,
+      ...(!isGeographicData && { description: '' }),
+      ...(config.hasCountrySelector && { countryId: '' }),
+      ...(config.hasCitySelector && { cityId: '' }),
+      ...(config.hasPlacementFields && { rotation: 30, refreshTtl: 300, noAdjacentSameAdvertiser: false }),
+    } as FormData,
   });
 
   // Watch countryId for districts to filter cities  
   const formValues = watch();
-  const watchedCountryId = 'countryId' in formValues ? Number(formValues.countryId) : undefined;
+  const watchedCountryId = 'countryId' in formValues ? String(formValues.countryId || '') : undefined;
 
   // Fetch countries if needed
   const { data: countries, loading: countriesLoading } = useFetch<Country[]>(
     async () => {
       if (!config.hasCountrySelector && !config.hasCitySelector) return [];
-      return ((await dictionariesApi.list('countries')) as Country[]).filter((c) => !c.blocked);
+      try {
+        return ((await dictionariesApi.list('countries')) as Country[]).filter((c) => !c.isBlocked);
+      } catch (error) {
+        console.error('Error loading countries:', error);
+        return [];
+      }
     },
     [open, config.hasCountrySelector, config.hasCitySelector]
   );
@@ -101,7 +130,12 @@ export const DictionaryFormDialog = ({
   const { data: cities, loading: citiesLoading } = useFetch<City[]>(
     async () => {
       if (!config.hasCitySelector) return [];
-      return ((await dictionariesApi.list('cities')) as City[]).filter((c) => !c.blocked);
+      try {
+        return ((await dictionariesApi.list('cities')) as City[]).filter((c) => !c.isBlocked);
+      } catch (error) {
+        console.error('Error loading cities:', error);
+        return [];
+      }
     },
     [open, config.hasCitySelector]
   );
@@ -123,16 +157,31 @@ export const DictionaryFormDialog = ({
       reset();
       setError(null);
       setSelectedCountryId(null);
+    } else if (!isEditMode) {
+      // Reset to default values when opening in create mode
+      reset({
+        name: isGeographicData ? '' : { ARM: '', RUS: '', ENG: '' },
+        isBlocked: false,
+        ...(!isGeographicData && { description: '' }),
+        ...(config.hasCountrySelector && { countryId: '' }),
+        ...(config.hasCitySelector && { cityId: '' }),
+        ...(config.hasPlacementFields && { rotation: 30, refreshTtl: 300, noAdjacentSameAdvertiser: false }),
+      } as FormData);
     }
-  }, [open, reset]);
+  }, [open, reset, isEditMode, isGeographicData, config]);
 
   // Update form when item data is loaded
   useEffect(() => {
     if (itemData && isEditMode) {
       const resetData: Record<string, unknown> = {
         name: itemData.name,
-        blocked: itemData.blocked,
+        isBlocked: itemData.isBlocked,
       };
+      
+      // Add description for non-geographic data
+      if (!isGeographicData && 'description' in itemData) {
+        resetData.description = itemData.description;
+      }
       
       if (config.hasCountrySelector && 'countryId' in itemData) {
         resetData.countryId = (itemData as City).countryId;
@@ -140,6 +189,13 @@ export const DictionaryFormDialog = ({
       
       if (config.hasCitySelector && 'cityId' in itemData) {
         resetData.cityId = (itemData as District).cityId;
+      }
+      
+      if (config.hasPlacementFields && 'rotation' in itemData) {
+        const placement = itemData as import('../../types').Placement;
+        resetData.rotation = placement.rotation;
+        resetData.refreshTtl = placement.refreshTtl;
+        resetData.noAdjacentSameAdvertiser = placement.noAdjacentSameAdvertiser;
       }
       
       reset(resetData);
@@ -152,7 +208,7 @@ export const DictionaryFormDialog = ({
         }
       }
     }
-  }, [itemData, isEditMode, reset, config, cities]);
+  }, [itemData, isEditMode, reset, config, cities, isGeographicData]);
 
   // Update selected country when watchedCountryId changes
   useEffect(() => {
@@ -167,8 +223,18 @@ export const DictionaryFormDialog = ({
       try {
         const formData: Record<string, unknown> = {
           name: data.name,
-          blocked: data.blocked,
+          isBlocked: data.isBlocked,
         };
+        
+        // Add hash for updates (required by backend)
+        if (isEditMode && itemData && 'hash' in itemData) {
+          formData.hash = (itemData as any).hash;
+        }
+        
+        // Add description for non-geographic data
+        if (!isGeographicData && 'description' in data) {
+          formData.description = data.description;
+        }
         
         if (config.hasCountrySelector && 'countryId' in data) {
           formData.countryId = data.countryId;
@@ -176,6 +242,12 @@ export const DictionaryFormDialog = ({
         
         if (config.hasCitySelector && 'cityId' in data) {
           formData.cityId = data.cityId;
+        }
+        
+        if (config.hasPlacementFields && 'rotation' in data) {
+          formData.rotation = data.rotation;
+          formData.refreshTtl = (data as any).refreshTtl;
+          formData.noAdjacentSameAdvertiser = (data as any).noAdjacentSameAdvertiser;
         }
 
         if (isEditMode) {
@@ -193,16 +265,16 @@ export const DictionaryFormDialog = ({
         enqueueSnackbar(t('common.error'), { variant: 'error' });
       }
     },
-    [config, isEditMode, dictKey, itemId, onSave, onClose, t, enqueueSnackbar]
+    [config, isEditMode, dictKey, itemId, onSave, onClose, t, enqueueSnackbar, isGeographicData, itemData]
   );
 
   // Country change handler for districts
   const handleCountryChange = useCallback(
-    (countryId: number) => {
+    (countryId: string) => {
       setSelectedCountryId(countryId);
       // Reset city selection when country changes
       if (config.hasCitySelector) {
-        setValue('cityId' as any, 0);
+        setValue('cityId' as any, '');
       }
     },
     [config.hasCitySelector, setValue]
@@ -240,6 +312,10 @@ export const DictionaryFormDialog = ({
       fullWidth
       PaperProps={{
         sx: {
+          height: '90vh',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
           borderRadius: 3,
         },
       }}
@@ -252,6 +328,7 @@ export const DictionaryFormDialog = ({
           pb: 2,
           borderBottom: '1px solid',
           borderColor: 'divider',
+          flexShrink: 0,
         }}
       >
         <Box component="span" sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
@@ -273,9 +350,15 @@ export const DictionaryFormDialog = ({
       <DialogContent
         sx={{
           pt: 3,
-          pb: 3,
+          pb: 0,
+          flexGrow: 1,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Box sx={{ flexGrow: 1, overflow: 'auto', pb: 2 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -288,9 +371,137 @@ export const DictionaryFormDialog = ({
           </Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3 }}>
-            {/* Name field */}
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <FormField name="name" control={control as any} label={t('dictionaries.name')} type="text" required />
+            {/* Name field(s) */}
+            {isGeographicData ? (
+              <FormField name="name" control={control as any} label={t('dictionaries.name')} type="text" required />
+            ) : (
+              <>
+                {/* Multilingual Name Inputs */}
+                <Box>
+                  <Typography variant="caption" sx={{ mb: 1, display: 'block', color: 'text.secondary' }}>
+                    {t('dictionaries.name')} *
+                  </Typography>
+                  
+                  {/* Armenian */}
+                  <Box sx={{ mb: 1.5 }}>
+                    <Controller
+                      name={"name.ARM" as any}
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label=""
+                          type="text"
+                          error={!!(errors as any)?.name?.ARM}
+                          helperText={(errors as any)?.name?.ARM?.message}
+                          required
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    fontSize: '1.5rem',
+                                    lineHeight: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  🇦🇲
+                                </Box>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      )}
+                    />
+                  </Box>
+                  
+                  {/* English */}
+                  <Box sx={{ mb: 1.5 }}>
+                    <Controller
+                      name={"name.ENG" as any}
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label=""
+                          type="text"
+                          error={!!(errors as any)?.name?.ENG}
+                          helperText={(errors as any)?.name?.ENG?.message}
+                          required
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    fontSize: '1.5rem',
+                                    lineHeight: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  🇺🇸
+                                </Box>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      )}
+                    />
+                  </Box>
+                  
+                  {/* Russian */}
+                  <Controller
+                    name={"name.RUS" as any}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label=""
+                        type="text"
+                        error={!!(errors as any)?.name?.RUS}
+                        helperText={(errors as any)?.name?.RUS?.message}
+                        required
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Box
+                                component="span"
+                                sx={{
+                                  fontSize: '1.5rem',
+                                  lineHeight: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                🇷🇺
+                              </Box>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
+
+                {/* Description Field */}
+                <Controller
+                  name={"description" as any}
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={t('dictionaries.description')}
+                      type="text"
+                      multiline
+                      rows={3}
+                    />
+                  )}
+                />
+              </>
+            )}
 
             {/* Country selector for cities */}
             {config.hasCountrySelector && (
@@ -302,13 +513,13 @@ export const DictionaryFormDialog = ({
                   <Select
                     name={field.name}
                     label={t('dictionaries.country')}
-                    value={typeof field.value === 'number' ? field.value : 0}
+                    value={typeof field.value === 'string' ? field.value : ''}
                     onChange={(value) => {
                       field.onChange(value);
-                      handleCountryChange(value as number);
+                      handleCountryChange(value as string);
                     }}
                     options={[
-                      { value: 0, label: t('restaurants.selectCountry') },
+                      { value: '', label: t('restaurants.selectCountry') },
                       ...countryOptions,
                     ]}
                     error={!!(errors as any).countryId}
@@ -327,7 +538,7 @@ export const DictionaryFormDialog = ({
                   name="countryFilter"
                   label={t('dictionaries.country')}
                   value={selectedCountryId || ''}
-                  onChange={(value) => handleCountryChange(value as number)}
+                  onChange={(value) => handleCountryChange(value as string)}
                   options={[
                     { value: '', label: t('common.all') },
                     ...countryOptions,
@@ -358,21 +569,57 @@ export const DictionaryFormDialog = ({
               </>
             )}
 
+            {/* Placement fields */}
+            {config.hasPlacementFields && (
+              <>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <FormField 
+                  name="rotation" 
+                  control={control as any} 
+                  label={t('dictionaries.rotation')} 
+                  type="number" 
+                  required 
+                  helperText={t('dictionaries.rotationHelper')}
+                />
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <FormField 
+                  name="refreshTtl" 
+                  control={control as any} 
+                  label={t('dictionaries.refreshTtl')} 
+                  type="number" 
+                  required 
+                  helperText={t('dictionaries.refreshTtlHelper')}
+                />
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <FormField 
+                  name="noAdjacentSameAdvertiser" 
+                  control={control as any} 
+                  label={t('dictionaries.noAdjacentSameAdvertiser')} 
+                  type="switch"
+                />
+              </>
+            )}
+
             {/* Blocked switch */}
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <FormField name="blocked" control={control as any} label={t('common.blocked')} type="switch" />
+            <FormField name="isBlocked" control={control as any} label={t('common.blocked')} type="switch" />
           </Box>
         )}
+          </Box>
 
         <Box
           sx={{
-            mt: 3,
-            pt: 2,
+            flexShrink: 0,
+            px: 3,
+            py: 2,
             borderTop: '1px solid',
             borderColor: 'divider',
+            bgcolor: 'background.paper',
             display: 'flex',
             justifyContent: 'flex-end',
             gap: 2,
+            position: 'sticky',
+            bottom: 0,
           }}
         >
           <Button
@@ -391,6 +638,7 @@ export const DictionaryFormDialog = ({
           >
             {t('common.save')}
           </Button>
+        </Box>
         </Box>
       </DialogContent>
     </Dialog>

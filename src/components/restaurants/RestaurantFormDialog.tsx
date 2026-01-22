@@ -8,7 +8,7 @@ import Button from '../ui/atoms/Button';
 interface RestaurantFormDialogProps {
   open: boolean;
   onClose: () => void;
-  restaurantId?: number;
+  restaurantId?: string;
 }
 
 export const RestaurantFormDialog = ({ open, onClose, restaurantId }: RestaurantFormDialogProps) => {

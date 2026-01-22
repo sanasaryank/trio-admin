@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, type ReactNode, Component, type ErrorInfo } from 'react';
 import {
   Table,
   TableBody,
@@ -12,6 +12,34 @@ import {
   Box,
   Typography,
 } from '@mui/material';
+
+/**
+ * Error boundary for table cells
+ */
+class CellErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error('Cell rendering error:', error, errorInfo);
+  }
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      return <span>-</span>;
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * Определение колонки таблицы
@@ -121,6 +149,39 @@ function DataTable<T extends Record<string, any>>({
   );
 
   /**
+   * Safe cell render - ensures no objects are rendered directly
+   */
+  const renderCellContent = (column: Column<T>, row: T): string | number | ReactNode => {
+    try {
+      if (column.render) {
+        const result = column.render(row);
+        // Ensure the result is safe to render
+        if (result === null || result === undefined) {
+          return <span></span>;
+        }
+        // Check if it's a plain object (not a React element)
+        if (typeof result === 'object') {
+          // React elements have $$typeof symbol
+          const isReactElement = result && typeof result === 'object' && '$$typeof' in result;
+          if (!isReactElement) {
+            console.error('Column render returned non-React object:', result);
+            return <span>{String(JSON.stringify(result))}</span>;
+          }
+        }
+        return result;
+      }
+
+      const value = row[column.id as keyof T];
+      if (value === null || value === undefined) return <span></span>;
+      if (typeof value === 'object') return <span>{String(JSON.stringify(value))}</span>;
+      return <span>{String(value)}</span>;
+    } catch (error) {
+      console.error('Error rendering cell:', error, { column: column.id, row });
+      return <span>-</span>;
+    }
+  };
+
+  /**
    * Рендер скелетона загрузки
    */
   const renderSkeleton = () => (
@@ -170,9 +231,9 @@ function DataTable<T extends Record<string, any>>({
             key={String(column.id)}
             style={{ width: column.width }}
           >
-            {column.render
-              ? column.render(row)
-              : String(row[column.id as keyof T] ?? '')}
+            <CellErrorBoundary>
+              {renderCellContent(column, row)}
+            </CellErrorBoundary>
           </TableCell>
         ))}
       </TableRow>

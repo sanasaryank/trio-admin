@@ -1,17 +1,56 @@
-import { getDatabase, saveDatabase, getSession } from './storage';
+import { getDatabase, saveDatabase, getSession, generateHash } from './storage';
 import { addAuditEvent } from './audit';
-import type { Restaurant, RestaurantFormData, QRCode, QRBatchCreateRequest } from '../../types';
+import type { Restaurant, RestaurantListItem, RestaurantFormData, QRCode, QRBatchCreateRequest, LocationsResponse } from '../../types';
 
 export const mockRestaurantsApi = {
-  list: async (): Promise<Restaurant[]> => {
+  list: async (): Promise<RestaurantListItem[]> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     const db = getDatabase();
-    return [...db.restaurants];
+    
+    // Map restaurants to list items with city and district names
+    return db.restaurants.map((restaurant) => {
+      const city = db.cities.find(c => c.id === restaurant.cityId);
+      const district = db.districts.find(d => d.id === restaurant.districtId);
+      
+      // Extract name - handle both string and DictionaryName object formats
+      let restaurantName = 'Unknown';
+      try {
+        if (!restaurant.name) {
+          console.warn('Restaurant missing name:', restaurant.id);
+          restaurantName = 'Unknown';
+        } else if (typeof restaurant.name === 'string') {
+          restaurantName = restaurant.name;
+        } else if (typeof restaurant.name === 'object') {
+          // Try different keys that might exist
+          restaurantName = (restaurant.name as any).ENG || 
+                          (restaurant.name as any).eng || 
+                          (restaurant.name as any).RUS || 
+                          (restaurant.name as any).rus ||
+                          (restaurant.name as any).ARM || 
+                          (restaurant.name as any).arm ||
+                          JSON.stringify(restaurant.name); // Last resort
+        } else {
+          restaurantName = String(restaurant.name);
+        }
+      } catch (error) {
+        console.error('Error extracting restaurant name:', error, restaurant);
+        restaurantName = `Restaurant ${restaurant.id}`;
+      }
+      
+      return {
+        id: restaurant.id,
+        name: restaurantName,
+        crmUrl: restaurant.crmUrl || '',
+        cityName: city?.name || 'Unknown',
+        districtName: district?.name || 'Unknown',
+        isBlocked: restaurant.isBlocked || false,
+      };
+    });
   },
 
-  getById: async (id: number): Promise<Restaurant> => {
+  getById: async (id: string): Promise<Restaurant> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 200));
 
@@ -22,7 +61,11 @@ export const mockRestaurantsApi = {
       throw new Error('Restaurant not found');
     }
 
-    return restaurant;
+    // Add hash for GET by ID
+    return {
+      ...restaurant,
+      hash: generateHash(),
+    };
   },
 
   create: async (data: RestaurantFormData): Promise<Restaurant> => {
@@ -31,16 +74,14 @@ export const mockRestaurantsApi = {
 
     const db = getDatabase();
     const session = getSession();
-    const now = Math.floor(Date.now() / 1000);
 
     const restaurant: Restaurant = {
-      id: db.nextId.restaurant++,
+      id: `rest${db.nextId.restaurant++}`,
       name: data.name,
       crmUrl: data.crmUrl,
       countryId: data.countryId,
       cityId: data.cityId,
       districtId: data.districtId,
-      address: data.address,
       lat: data.lat,
       lng: data.lng,
       typeId: data.typeId,
@@ -48,6 +89,11 @@ export const mockRestaurantsApi = {
       menuTypeId: data.menuTypeId,
       integrationTypeId: data.integrationTypeId,
       adminEmail: data.adminEmail,
+      adminUsername: data.adminUsername,
+      // Store admin password only if provided
+      ...(data.adminPassword && { adminPassword: data.adminPassword }),
+      legalAddress: data.legalAddress,
+      tin: data.tin,
       connectionData: {
         host: data.connectionData.host,
         port: data.connectionData.port,
@@ -55,9 +101,7 @@ export const mockRestaurantsApi = {
         // Store password only if provided
         ...(data.connectionData.password && { password: data.connectionData.password }),
       },
-      blocked: data.blocked,
-      createdAt: now,
-      updatedAt: now,
+      isBlocked: data.isBlocked,
     };
 
     db.restaurants.push(restaurant);
@@ -71,14 +115,14 @@ export const mockRestaurantsApi = {
         action: 'create',
         entityType: 'restaurant',
         entityId: restaurant.id,
-        entityLabel: restaurant.name,
+        entityLabel: restaurant.name.ENG,
       });
     }
 
     return restaurant;
   },
 
-  update: async (id: number, data: RestaurantFormData): Promise<Restaurant> => {
+  update: async (id: string, data: RestaurantFormData): Promise<Restaurant> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 400));
 
@@ -90,7 +134,12 @@ export const mockRestaurantsApi = {
       throw new Error('Restaurant not found');
     }
 
-    const now = Math.floor(Date.now() / 1000);
+    // Validate hash if provided (optimistic concurrency control)
+    if (data.hash) {
+      // In a real implementation, we would validate the hash here
+      // For mock, we'll just accept it
+    }
+
     const existing = db.restaurants[index];
 
     const restaurant: Restaurant = {
@@ -100,7 +149,6 @@ export const mockRestaurantsApi = {
       countryId: data.countryId,
       cityId: data.cityId,
       districtId: data.districtId,
-      address: data.address,
       lat: data.lat,
       lng: data.lng,
       typeId: data.typeId,
@@ -108,6 +156,15 @@ export const mockRestaurantsApi = {
       menuTypeId: data.menuTypeId,
       integrationTypeId: data.integrationTypeId,
       adminEmail: data.adminEmail,
+      adminUsername: data.adminUsername,
+      // Only update admin password if adminChangePassword is true
+      ...(data.adminChangePassword && data.adminPassword
+        ? { adminPassword: data.adminPassword }
+        : existing.adminPassword
+        ? { adminPassword: existing.adminPassword }
+        : {}),
+      legalAddress: data.legalAddress,
+      tin: data.tin,
       connectionData: {
         host: data.connectionData.host,
         port: data.connectionData.port,
@@ -119,8 +176,7 @@ export const mockRestaurantsApi = {
           ? { password: existing.connectionData.password }
           : {}),
       },
-      blocked: data.blocked,
-      updatedAt: now,
+      isBlocked: data.isBlocked,
     };
 
     db.restaurants[index] = restaurant;
@@ -134,14 +190,14 @@ export const mockRestaurantsApi = {
         action: 'update',
         entityType: 'restaurant',
         entityId: restaurant.id,
-        entityLabel: restaurant.name,
+        entityLabel: updatedRestaurant.name.ENG,
       });
     }
 
     return restaurant;
   },
 
-  block: async (id: number, blocked: boolean): Promise<Restaurant> => {
+  block: async (id: string, isBlocked: boolean): Promise<Restaurant> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -153,11 +209,9 @@ export const mockRestaurantsApi = {
       throw new Error('Restaurant not found');
     }
 
-    const now = Math.floor(Date.now() / 1000);
     const restaurant = {
       ...db.restaurants[index],
-      blocked,
-      updatedAt: now,
+      isBlocked,
     };
 
     db.restaurants[index] = restaurant;
@@ -168,10 +222,10 @@ export const mockRestaurantsApi = {
       addAuditEvent({
         actorId: session.id,
         actorName: `${session.firstName} ${session.lastName}`,
-        action: blocked ? 'block' : 'unblock',
+        action: isBlocked ? 'block' : 'unblock',
         entityType: 'restaurant',
         entityId: restaurant.id,
-        entityLabel: restaurant.name,
+        entityLabel: updatedRestaurant.name.ENG,
       });
     }
 
@@ -179,7 +233,7 @@ export const mockRestaurantsApi = {
   },
 
   // QR Code operations
-  getQRCodes: async (restaurantId: number): Promise<QRCode[]> => {
+  getQRCodes: async (restaurantId: string): Promise<QRCode[]> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -188,13 +242,12 @@ export const mockRestaurantsApi = {
     return [...qrCodes];
   },
 
-  createQRBatch: async (restaurantId: number, request: QRBatchCreateRequest): Promise<QRCode[]> => {
+  createQRBatch: async (restaurantId: string, request: QRBatchCreateRequest): Promise<QRCode[]> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const db = getDatabase();
     const session = getSession();
-    const now = Math.floor(Date.now() / 1000);
 
     // Verify restaurant exists
     const restaurant = db.restaurants.find((r) => r.id === restaurantId);
@@ -206,14 +259,12 @@ export const mockRestaurantsApi = {
     const restaurantCode = restaurant.name.substring(0, 3).toUpperCase();
 
     for (let i = 0; i < request.count; i++) {
-      const qrId = db.nextId.qr++;
+      const qrId = `qr${db.nextId.qr++}`;
       const qrCode: QRCode = {
         id: qrId,
         restaurantId,
-        qrText: `https://menu.trio.com/qr/${restaurantCode}-${String(qrId).padStart(3, '0')}`,
+        qrText: `https://menu.trio.com/qr/${restaurantCode}-${String(db.nextId.qr).padStart(3, '0')}`,
         blocked: false,
-        createdAt: now,
-        updatedAt: now,
       };
       db.qrCodes.push(qrCode);
       newQRCodes.push(qrCode);
@@ -229,7 +280,7 @@ export const mockRestaurantsApi = {
         action: 'batch_create_qr',
         entityType: 'qr',
         entityId: restaurantId,
-        entityLabel: restaurant.name,
+        entityLabel: restaurant.name.ENG,
         metadata: {
           count: request.count,
         },
@@ -239,7 +290,7 @@ export const mockRestaurantsApi = {
     return newQRCodes;
   },
 
-  blockQR: async (restaurantId: number, qrId: number, blocked: boolean): Promise<QRCode> => {
+  blockQR: async (restaurantId: string, qrId: string, isBlocked: boolean): Promise<QRCode> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -251,11 +302,9 @@ export const mockRestaurantsApi = {
       throw new Error('QR code not found');
     }
 
-    const now = Math.floor(Date.now() / 1000);
     const qrCode = {
       ...db.qrCodes[index],
-      blocked,
-      updatedAt: now,
+      isBlocked,
     };
 
     db.qrCodes[index] = qrCode;
@@ -266,7 +315,7 @@ export const mockRestaurantsApi = {
       addAuditEvent({
         actorId: session.id,
         actorName: `${session.firstName} ${session.lastName}`,
-        action: blocked ? 'block' : 'unblock',
+        action: isBlocked ? 'block' : 'unblock',
         entityType: 'qr',
         entityId: qrCode.id,
         entityLabel: qrCode.qrText,
@@ -274,5 +323,18 @@ export const mockRestaurantsApi = {
     }
 
     return qrCode;
+  },
+
+  getLocations: async (): Promise<LocationsResponse> => {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const db = getDatabase();
+    
+    return {
+      countries: db.countries,
+      cities: db.cities,
+      districts: db.districts,
+    };
   },
 };

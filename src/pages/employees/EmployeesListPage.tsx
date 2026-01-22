@@ -15,7 +15,6 @@ import {
   DataTable,
   Pagination,
   FilterDrawer,
-  StatusChip,
   ConfirmDialog,
   type Column,
 } from '../../components/ui/molecules';
@@ -33,7 +32,7 @@ import type { Employee, EmployeeFilters } from '../../types';
 
 interface FormDialogState {
   open: boolean;
-  employeeId?: number;
+  employeeId?: string;
 }
 
 export const EmployeesListPage = () => {
@@ -81,7 +80,7 @@ export const EmployeesListPage = () => {
       // Status filter
       if (filters.status !== 'all') {
         const isBlocked = filters.status === 'blocked';
-        if (employee.blocked !== isBlocked) return false;
+        if (employee.isBlocked !== isBlocked) return false;
       }
 
       // Search filter
@@ -115,15 +114,17 @@ export const EmployeesListPage = () => {
   const handleBlockToggle = useCallback(
     (employee: Employee) => {
       confirmDialog.open({
-        title: employee.blocked
+        title: employee.isBlocked
           ? t('employees.unblockConfirmTitle')
           : t('employees.blockConfirmTitle'),
-        message: employee.blocked
+        message: employee.isBlocked
           ? t('employees.unblockConfirmMessage', { name: getFullName(employee) })
           : t('employees.blockConfirmMessage', { name: getFullName(employee) }),
+        confirmText: t('common.confirm'),
+        cancelText: t('common.cancel'),
         onConfirm: async () => {
           try {
-            await employeesApi.block(employee.id, !employee.blocked);
+            await employeesApi.block(employee.id, !employee.isBlocked);
             await loadEmployees();
             enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
           } catch (err) {
@@ -138,7 +139,7 @@ export const EmployeesListPage = () => {
 
   // Handle edit
   const handleEdit = useCallback(
-    (id: number) => {
+    (id: string) => {
       setFormDialog({ open: true, employeeId: id });
     },
     []
@@ -191,21 +192,13 @@ export const EmployeesListPage = () => {
         render: (employee) => getFullName(employee),
       },
       {
-        id: 'status',
-        label: t('common.status'),
-        width: 150,
-        render: (employee) => (
-          <StatusChip status={employee.blocked ? 'blocked' : 'active'} />
-        ),
-      },
-      {
         id: 'actions',
         label: t('common.actions'),
         width: 200,
         render: (employee) => (
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
             <Switch
-              checked={!employee.blocked}
+              checked={!employee.isBlocked}
               onChange={() => handleBlockToggle(employee)}
               color="primary"
             />

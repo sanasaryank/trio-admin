@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Box, Paper, Typography, Alert, Divider, Grid } from '@mui/material';
+import { Box, Paper, Typography, Alert, Divider, Grid, InputAdornment } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 // API
@@ -11,6 +11,8 @@ import { restaurantsApi, dictionariesApi } from '../../api/endpoints';
 
 // Atoms
 import Button from '../../components/ui/atoms/Button';
+import TextField from '../../components/ui/atoms/TextField';
+import Checkbox from '../../components/ui/atoms/Checkbox';
 
 // Molecules
 import FormField from '../../components/ui/molecules/FormField';
@@ -23,35 +25,43 @@ import { ConnectionDataFields } from '../../components/restaurants/ConnectionDat
 // Hooks
 import { useFetch, useFormSubmit } from '../../hooks';
 
+// Utils
+import { getDisplayName } from '../../utils/dictionaryUtils';
+
 // Types
 import type {
-  Country,
-  City,
-  District,
   RestaurantType,
   PriceSegment,
   MenuType,
   IntegrationType,
 } from '../../types';
 
-const restaurantSchema = z.object({
-  name: z.string().min(1, 'Название обязательно для заполнения'),
-  crmUrl: z.string().url('Некорректный URL'),
-  countryId: z.number().min(1, 'Выберите страну'),
-  cityId: z.number().min(1, 'Выберите город'),
-  districtId: z.number().min(1, 'Выберите район'),
-  address: z.string().min(1, 'Адрес обязателен для заполнения'),
+const createRestaurantSchema = (t: (key: string) => string) => z.object({
+  name: z.object({
+    ARM: z.string().min(1, t('validation.nameRequired')),
+    RUS: z.string().min(1, t('validation.nameRequired')),
+    ENG: z.string().min(1, t('validation.nameRequired')),
+  }),
+  crmUrl: z.string().url(t('validation.url')),
+  countryId: z.string().min(1, t('validation.selectCountry')),
+  cityId: z.string().min(1, t('validation.selectCity')),
+  districtId: z.string().min(1, t('validation.selectDistrict')),
+  legalAddress: z.string().min(1, t('validation.legalAddressRequired')),
+  tin: z.string().min(1, t('validation.tinRequired')),
   lat: z.number(),
   lng: z.number(),
-  typeId: z.number().min(1, 'Выберите тип ресторана'),
-  priceSegmentId: z.number().min(1, 'Выберите ценовой сегмент'),
-  menuTypeId: z.number().min(1, 'Выберите тип меню'),
-  integrationTypeId: z.number().min(1, 'Выберите тип интеграции'),
-  adminEmail: z.string().email('Некорректный email'),
+  typeId: z.array(z.string()).min(1, t('validation.selectRestaurantType')),
+  priceSegmentId: z.array(z.string()).min(1, t('validation.selectPriceSegment')),
+  menuTypeId: z.array(z.string()).min(1, t('validation.selectMenuType')),
+  integrationTypeId: z.string().min(1, t('validation.selectIntegrationType')),
+  adminEmail: z.string().email(t('validation.email')),
+  adminUsername: z.string().min(1, t('validation.usernameRequired')),
+  adminPassword: z.string(),
+  adminChangePassword: z.boolean(),
   connectionData: z.object({
-    host: z.string().min(1, 'Хост обязателен для заполнения'),
-    port: z.number().min(1, 'Порт обязателен для заполнения'),
-    username: z.string().min(1, 'Имя пользователя обязательно для заполнения'),
+    host: z.string().min(1, t('validation.hostRequired')),
+    port: z.number().min(1, t('validation.portRequired')),
+    username: z.string().min(1, t('validation.usernameRequired')),
     password: z.string(),
     changePassword: z.boolean(),
   }).refine(
@@ -63,18 +73,30 @@ const restaurantSchema = z.object({
       return true;
     },
     {
-      message: 'Пароль обязателен для заполнения',
+      message: t('validation.passwordRequired'),
       path: ['password'],
     }
   ),
-  blocked: z.boolean(),
-});
+  isBlocked: z.boolean(),
+}).refine(
+  (data) => {
+    // Admin password is required if adminChangePassword is true or in create mode
+    if (data.adminChangePassword && !data.adminPassword) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: t('validation.passwordRequired'),
+    path: ['adminPassword'],
+  }
+);
 
-type RestaurantFormValues = z.infer<typeof restaurantSchema>;
+type RestaurantFormValues = z.infer<ReturnType<typeof createRestaurantSchema>>;
 
 interface RestaurantFormPageProps {
   onClose?: () => void;
-  restaurantId?: number;
+  restaurantId?: string;
   isDialog?: boolean;
   onSubmitCallback?: (handler: () => void) => void;
   onSubmittingChange?: (isSubmitting: boolean) => void;
@@ -84,14 +106,18 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: routeId } = useParams<{ id: string }>();
-  const id = restaurantId?.toString() || routeId;
+  const id = restaurantId || routeId;
   const isEditMode = !!id;
   const isInitialLoadRef = useRef(true);
-  const prevCountryIdRef = useRef<number>(0);
-  const prevCityIdRef = useRef<number>(0);
+  const prevCountryIdRef = useRef<string>('');
+  const prevCityIdRef = useRef<string>('');
+  const restaurantHashRef = useRef<string | undefined>(undefined);
 
   // Form submission hook
   const { isSubmitting, error: submitError, handleSubmit: handleFormSubmit } = useFormSubmit<RestaurantFormValues>();
+
+  // Create schema with translations
+  const restaurantSchema = useMemo(() => createRestaurantSchema(t), [t]);
 
   // React Hook Form
   const {
@@ -100,22 +126,27 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
     reset,
     watch,
     setValue,
+    formState: { errors },
   } = useForm<RestaurantFormValues>({
     resolver: zodResolver(restaurantSchema),
     defaultValues: {
-      name: '',
+      name: { ARM: '', RUS: '', ENG: '' },
       crmUrl: '',
-      countryId: 0,
-      cityId: 0,
-      districtId: 0,
-      address: '',
+      countryId: '',
+      cityId: '',
+      districtId: '',
+      legalAddress: '',
+      tin: '',
       lat: 40.1792, // Default: Yerevan
       lng: 44.4991,
-      typeId: 0,
-      priceSegmentId: 0,
-      menuTypeId: 0,
-      integrationTypeId: 0,
+      typeId: [],
+      priceSegmentId: [],
+      menuTypeId: [],
+      integrationTypeId: '',
       adminEmail: '',
+      adminUsername: '',
+      adminPassword: '',
+      adminChangePassword: !isEditMode,
       connectionData: {
         host: '',
         port: 0,
@@ -123,13 +154,14 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
         password: '',
         changePassword: !isEditMode,
       },
-      blocked: false,
+      isBlocked: false,
     },
   });
 
   // Watch form values
   const selectedCountryId = watch('countryId');
   const selectedCityId = watch('cityId');
+  const adminChangePassword = watch('adminChangePassword');
   const changePassword = watch('connectionData.changePassword');
   const currentLat = watch('lat');
   const currentLng = watch('lng');
@@ -142,41 +174,56 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
   } = useFetch(
     async () => {
       if (!isEditMode || !id) return null;
-      return await restaurantsApi.getById(parseInt(id, 10));
+      try {
+        return await restaurantsApi.getById(id);
+      } catch (error) {
+        console.error('Error loading restaurant:', error);
+        return null;
+      }
     },
     [id, isEditMode]
   );
 
-  // Fetch dictionaries
+  // Fetch dictionaries and locations
   const { data: dictionaries, loading: isFetchingDictionaries } = useFetch(
     async () => {
-      const [
-        countriesData,
-        citiesData,
-        districtsData,
-        restaurantTypesData,
-        priceSegmentsData,
-        menuTypesData,
-        integrationTypesData,
-      ] = await Promise.all([
-        dictionariesApi.list('countries'),
-        dictionariesApi.list('cities'),
-        dictionariesApi.list('districts'),
-        dictionariesApi.list('restaurant-types'),
-        dictionariesApi.list('price-segments'),
-        dictionariesApi.list('menu-types'),
-        dictionariesApi.list('integration-types'),
-      ]);
+      try {
+        const [
+          locationsData,
+          restaurantTypesData,
+          priceSegmentsData,
+          menuTypesData,
+          integrationTypesData,
+        ] = await Promise.all([
+          restaurantsApi.getLocations().catch(() => ({ countries: [], cities: [], districts: [] })),
+          dictionariesApi.list('restaurant-types').catch(() => []),
+          dictionariesApi.list('price-segments').catch(() => []),
+          dictionariesApi.list('menu-types').catch(() => []),
+          dictionariesApi.list('integration-types').catch(() => []),
+        ]);
 
-      return {
-        countries: countriesData as Country[],
-        cities: citiesData as City[],
-        districts: districtsData as District[],
-        restaurantTypes: restaurantTypesData as RestaurantType[],
-        priceSegments: priceSegmentsData as PriceSegment[],
-        menuTypes: menuTypesData as MenuType[],
-        integrationTypes: integrationTypesData as IntegrationType[],
-      };
+        return {
+          countries: locationsData.countries || [],
+          cities: locationsData.cities || [],
+          districts: locationsData.districts || [],
+          restaurantTypes: (restaurantTypesData as RestaurantType[]) || [],
+          priceSegments: (priceSegmentsData as PriceSegment[]) || [],
+          menuTypes: (menuTypesData as MenuType[]) || [],
+          integrationTypes: (integrationTypesData as IntegrationType[]) || [],
+        };
+      } catch (error) {
+        console.error('Error loading dictionaries:', error);
+        // Return empty data to prevent crash
+        return {
+          countries: [],
+          cities: [],
+          districts: [],
+          restaurantTypes: [],
+          priceSegments: [],
+          menuTypes: [],
+          integrationTypes: [],
+        };
+      }
     },
     []
   );
@@ -194,24 +241,31 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
   // Reset form with restaurant data when loaded
   useEffect(() => {
     if (restaurant) {
+      // Store hash for optimistic locking
+      restaurantHashRef.current = restaurant.hash;
+      
       // Store initial values BEFORE resetting form to prevent cascade
-      prevCountryIdRef.current = restaurant.countryId;
-      prevCityIdRef.current = restaurant.cityId;
+      prevCountryIdRef.current = String(restaurant.countryId);
+      prevCityIdRef.current = String(restaurant.cityId);
 
       reset({
         name: restaurant.name,
         crmUrl: restaurant.crmUrl,
-        countryId: restaurant.countryId,
-        cityId: restaurant.cityId,
-        districtId: restaurant.districtId,
-        address: restaurant.address,
+        countryId: String(restaurant.countryId),
+        cityId: String(restaurant.cityId),
+        districtId: String(restaurant.districtId),
+        legalAddress: restaurant.legalAddress,
+        tin: restaurant.tin,
         lat: restaurant.lat,
         lng: restaurant.lng,
-        typeId: restaurant.typeId,
-        priceSegmentId: restaurant.priceSegmentId,
-        menuTypeId: restaurant.menuTypeId,
-        integrationTypeId: restaurant.integrationTypeId,
+        typeId: Array.isArray(restaurant.typeId) ? restaurant.typeId.map(String) : [],
+        priceSegmentId: Array.isArray(restaurant.priceSegmentId) ? restaurant.priceSegmentId.map(String) : [],
+        menuTypeId: Array.isArray(restaurant.menuTypeId) ? restaurant.menuTypeId.map(String) : [],
+        integrationTypeId: String(restaurant.integrationTypeId),
         adminEmail: restaurant.adminEmail,
+        adminUsername: restaurant.adminUsername,
+        adminPassword: '',
+        adminChangePassword: false,
         connectionData: {
           host: restaurant.connectionData.host,
           port: restaurant.connectionData.port,
@@ -219,7 +273,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
           password: '',
           changePassword: false,
         },
-        blocked: restaurant.blocked,
+        isBlocked: restaurant.isBlocked,
       });
 
       // Mark initial load as complete after a short delay to allow reset to complete
@@ -252,13 +306,13 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
     prevCountryIdRef.current = selectedCountryId;
 
     // Reset dependent fields if city is not valid for the new country
-    if (selectedCountryId > 0) {
+    if (selectedCountryId) {
       const currentCityId = watch('cityId');
-      if (currentCityId > 0) {
+      if (currentCityId) {
         const cityExists = filteredCities.some((c) => c.id === currentCityId);
         if (!cityExists) {
-          setValue('cityId', 0);
-          setValue('districtId', 0);
+          setValue('cityId', '');
+          setValue('districtId', '');
         }
       }
     }
@@ -275,12 +329,12 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
     prevCityIdRef.current = selectedCityId;
 
     // Reset dependent fields if district is not valid for the new city
-    if (selectedCityId > 0) {
+    if (selectedCityId) {
       const currentDistrictId = watch('districtId');
-      if (currentDistrictId > 0) {
+      if (currentDistrictId) {
         const districtExists = filteredDistricts.some((d) => d.id === currentDistrictId);
         if (!districtExists) {
-          setValue('districtId', 0);
+          setValue('districtId', '');
         }
       }
     }
@@ -299,7 +353,8 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
             countryId: formData.countryId,
             cityId: formData.cityId,
             districtId: formData.districtId,
-            address: formData.address,
+            legalAddress: formData.legalAddress,
+            tin: formData.tin,
             lat: formData.lat,
             lng: formData.lng,
             typeId: formData.typeId,
@@ -307,19 +362,28 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
             menuTypeId: formData.menuTypeId,
             integrationTypeId: formData.integrationTypeId,
             adminEmail: formData.adminEmail,
+            adminUsername: formData.adminUsername,
+            ...(isEditMode && !formData.adminChangePassword
+              ? {}
+              : { adminPassword: formData.adminPassword || '' }),
             connectionData: {
               host: formData.connectionData.host,
-              port: formData.connectionData.port,
+              port: Number(formData.connectionData.port),
               username: formData.connectionData.username,
               ...(isEditMode && !formData.connectionData.changePassword
                 ? {}
                 : { password: formData.connectionData.password || '' }),
             },
-            blocked: formData.blocked,
+            isBlocked: formData.isBlocked,
           };
 
+          // Include hash for optimistic locking in edit mode
+          if (isEditMode && restaurantHashRef.current) {
+            submitData.hash = restaurantHashRef.current;
+          }
+
           if (isEditMode && id) {
-            await restaurantsApi.update(parseInt(id, 10), submitData);
+            await restaurantsApi.update(id, submitData);
           } else {
             await restaurantsApi.create(submitData);
           }
@@ -352,18 +416,22 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
     [setValue]
   );
 
-  const handleAddressChange = useCallback(
-    (address: string) => {
-      setValue('address', address);
-    },
-    [setValue]
-  );
-
   const handleLocationMetadataChange = useCallback(
-    (metadata: { city?: string; district?: string; cityId?: number; districtId?: number }) => {
+    (metadata: { city?: string; district?: string; cityId?: string; districtId?: string }) => {
       // Update form fields with matched IDs
       if (metadata.cityId) {
-        setValue('cityId', metadata.cityId);
+        // Find the matched city to get its country
+        const matchedCity = cities.find(c => c.id === metadata.cityId);
+        if (matchedCity) {
+          // Update refs to prevent cascade reset
+          prevCountryIdRef.current = matchedCity.countryId;
+          prevCityIdRef.current = metadata.cityId;
+          
+          // Set country first
+          setValue('countryId', matchedCity.countryId);
+          // Then set city
+          setValue('cityId', metadata.cityId);
+        }
         
         // Only update district if it belongs to the matched city
         if (metadata.districtId) {
@@ -376,12 +444,19 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
         }
       }
     },
-    [setValue, districts]
+    [setValue, districts, cities]
   );
 
   const handleChangePasswordToggle = useCallback(
     (value: boolean) => {
       setValue('connectionData.changePassword', value);
+    },
+    [setValue]
+  );
+
+  const handleAdminChangePasswordToggle = useCallback(
+    (value: boolean) => {
+      setValue('adminChangePassword', value);
     },
     [setValue]
   );
@@ -409,56 +484,53 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
   // Prepare select options
   const countryOptions = useMemo(
     () => [
-      { value: 0, label: t('restaurants.selectCountry') },
-      ...countries.map((country) => ({ value: country.id, label: country.name })),
+      { value: '', label: t('restaurants.selectCountry') },
+      ...countries.map((country) => ({ value: String(country.id), label: country.name })),
     ],
     [countries, t]
   );
 
   const cityOptions = useMemo(
     () => [
-      { value: 0, label: t('restaurants.selectCity') },
-      ...filteredCities.map((city) => ({ value: city.id, label: city.name })),
+      { value: '', label: t('restaurants.selectCity') },
+      ...filteredCities.map((city) => ({ value: String(city.id), label: city.name })),
     ],
     [filteredCities, t]
   );
 
   const districtOptions = useMemo(
     () => [
-      { value: 0, label: t('restaurants.selectDistrict') },
-      ...filteredDistricts.map((district) => ({ value: district.id, label: district.name })),
+      { value: '', label: t('restaurants.selectDistrict') },
+      ...filteredDistricts.map((district) => ({ value: String(district.id), label: district.name })),
     ],
     [filteredDistricts, t]
   );
 
   const restaurantTypeOptions = useMemo(
     () => [
-      { value: 0, label: t('restaurants.selectType') },
-      ...restaurantTypes.map((type) => ({ value: type.id, label: type.name })),
+      ...restaurantTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
     ],
-    [restaurantTypes, t]
+    [restaurantTypes]
   );
 
   const priceSegmentOptions = useMemo(
     () => [
-      { value: 0, label: t('restaurants.selectSegment') },
-      ...priceSegments.map((segment) => ({ value: segment.id, label: segment.name })),
+      ...priceSegments.map((segment) => ({ value: String(segment.id), label: getDisplayName(segment.name) })),
     ],
-    [priceSegments, t]
+    [priceSegments]
   );
 
   const menuTypeOptions = useMemo(
     () => [
-      { value: 0, label: t('restaurants.selectType') },
-      ...menuTypes.map((type) => ({ value: type.id, label: type.name })),
+      ...menuTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
     ],
-    [menuTypes, t]
+    [menuTypes]
   );
 
   const integrationTypeOptions = useMemo(
     () => [
-      { value: 0, label: t('restaurants.selectType') },
-      ...integrationTypes.map((type) => ({ value: type.id, label: type.name })),
+      { value: '', label: t('restaurants.selectType') },
+      ...integrationTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
     ],
     [integrationTypes, t]
   );
@@ -485,14 +557,118 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
 
           <Grid container spacing={2}>
             <Grid size={12}>
-              <FormField
-                name="name"
-                control={control}
-                label={t('restaurants.name')}
-                type="text"
-                required
-                disabled={isSubmitting}
-              />
+              {/* Multilingual Name Inputs */}
+              <Box>
+                <Typography variant="caption" sx={{ mb: 1, display: 'block', color: 'text.secondary' }}>
+                  {t('restaurants.name')} *
+                </Typography>
+                
+                {/* Armenian */}
+                <Box sx={{ mb: 1.5 }}>
+                  <Controller
+                    name="name.ARM"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label=""
+                        type="text"
+                        error={!!(errors as any)?.name?.ARM}
+                        helperText={(errors as any)?.name?.ARM?.message}
+                        required
+                        disabled={isSubmitting}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Box
+                                component="span"
+                                sx={{
+                                  fontSize: '1.5rem',
+                                  lineHeight: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                🇦🇲
+                              </Box>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
+                
+                {/* English */}
+                <Box sx={{ mb: 1.5 }}>
+                  <Controller
+                    name="name.ENG"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label=""
+                        type="text"
+                        error={!!(errors as any)?.name?.ENG}
+                        helperText={(errors as any)?.name?.ENG?.message}
+                        required
+                        disabled={isSubmitting}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Box
+                                component="span"
+                                sx={{
+                                  fontSize: '1.5rem',
+                                  lineHeight: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                🇺🇸
+                              </Box>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
+                
+                {/* Russian */}
+                <Controller
+                  name="name.RUS"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label=""
+                      type="text"
+                      error={!!(errors as any)?.name?.RUS}
+                      helperText={(errors as any)?.name?.RUS?.message}
+                      required
+                      disabled={isSubmitting}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Box
+                              component="span"
+                              sx={{
+                                fontSize: '1.5rem',
+                                lineHeight: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                              }}
+                            >
+                              🇷🇺
+                            </Box>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                />
+              </Box>
             </Grid>
 
             <Grid size={12}>
@@ -526,7 +702,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
                 type="select"
                 options={cityOptions}
                 required
-                disabled={isSubmitting || selectedCountryId === 0}
+                disabled={isSubmitting || !selectedCountryId}
               />
             </Grid>
 
@@ -538,18 +714,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
                 type="select"
                 options={districtOptions}
                 required
-                disabled={isSubmitting || selectedCityId === 0}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <FormField
-                name="address"
-                control={control}
-                label={t('restaurants.address')}
-                type="text"
-                required
-                disabled={isSubmitting}
+                disabled={isSubmitting || !selectedCityId}
               />
             </Grid>
 
@@ -561,7 +726,6 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
                 lat={currentLat}
                 lng={currentLng}
                 onChange={handleLocationChange}
-                onAddressChange={handleAddressChange}
                 onLocationMetadataChange={handleLocationMetadataChange}
                 cities={cities}
                 districts={districts}
@@ -573,7 +737,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
                 name="typeId"
                 control={control}
                 label={t('restaurants.type')}
-                type="select"
+                type="multiselect"
                 options={restaurantTypeOptions}
                 required
                 disabled={isSubmitting}
@@ -585,7 +749,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
                 name="priceSegmentId"
                 control={control}
                 label={t('restaurants.priceSegment')}
-                type="select"
+                type="multiselect"
                 options={priceSegmentOptions}
                 required
                 disabled={isSubmitting}
@@ -597,7 +761,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
                 name="menuTypeId"
                 control={control}
                 label={t('restaurants.menuType')}
-                type="select"
+                type="multiselect"
                 options={menuTypeOptions}
                 required
                 disabled={isSubmitting}
@@ -626,6 +790,61 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
                 disabled={isSubmitting}
               />
             </Grid>
+
+            <Grid size={12}>
+              <FormField
+                name="adminUsername"
+                control={control}
+                label={t('restaurants.adminUsername')}
+                type="text"
+                required
+                disabled={isSubmitting}
+              />
+            </Grid>
+
+            {isEditMode && (
+              <Grid size={12}>
+                <Checkbox
+                  checked={adminChangePassword}
+                  onChange={handleAdminChangePasswordToggle}
+                  label={t('restaurants.changeAdminPassword')}
+                  disabled={isSubmitting}
+                />
+              </Grid>
+            )}
+
+            <Grid size={12}>
+              <FormField
+                name="adminPassword"
+                control={control}
+                label={t('restaurants.adminPassword')}
+                type="password"
+                required={!isEditMode || adminChangePassword}
+                disabled={isSubmitting || (isEditMode && !adminChangePassword)}
+              />
+            </Grid>
+
+            <Grid size={12}>
+              <FormField
+                name="legalAddress"
+                control={control}
+                label={t('restaurants.legalAddress')}
+                type="text"
+                required
+                disabled={isSubmitting}
+              />
+            </Grid>
+
+            <Grid size={12}>
+              <FormField
+                name="tin"
+                control={control}
+                label={t('restaurants.tin')}
+                type="text"
+                required
+                disabled={isSubmitting}
+              />
+            </Grid>
           </Grid>
 
           <ConnectionDataFields
@@ -639,7 +858,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
           <Divider sx={{ my: 3 }} />
 
           <FormField
-            name="blocked"
+            name="isBlocked"
             control={control}
             label={t('common.blocked')}
             type="switch"

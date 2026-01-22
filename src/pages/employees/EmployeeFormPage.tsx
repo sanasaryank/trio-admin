@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,13 +11,13 @@ import { Button } from '../../components/ui/atoms';
 import { useFormSubmit, useFetch } from '../../hooks';
 import type { EmployeeFormData, Employee } from '../../types';
 
-const employeeSchema = z.object({
-  firstName: z.string().min(1, 'validation.firstNameRequired'),
-  lastName: z.string().min(1, 'validation.lastNameRequired'),
-  username: z.string().min(3, 'validation.usernameMinLength'),
+const createEmployeeSchema = (t: (key: string) => string) => z.object({
+  firstName: z.string().min(1, t('validation.firstNameRequired')),
+  lastName: z.string().min(1, t('validation.lastNameRequired')),
+  username: z.string().min(3, t('validation.usernameMinLength')),
   password: z.string().optional(),
   changePassword: z.boolean().optional(),
-  blocked: z.boolean(),
+  isBlocked: z.boolean(),
 }).refine((data) => {
   // Password is required when creating a new employee
   if (!data.changePassword) {
@@ -25,15 +25,15 @@ const employeeSchema = z.object({
   }
   return data.password && data.password.length >= 6;
 }, {
-  message: 'validation.passwordMinLength',
+  message: t('validation.passwordMinLength'),
   path: ['password'],
 });
 
-type EmployeeFormValues = z.infer<typeof employeeSchema>;
+type EmployeeFormValues = z.infer<ReturnType<typeof createEmployeeSchema>>;
 
 interface EmployeeFormPageProps {
   onClose?: () => void;
-  employeeId?: number;
+  employeeId?: string;
   isDialog?: boolean;
   onSubmitCallback?: (handler: () => void) => void;
   onSubmittingChange?: (isSubmitting: boolean) => void;
@@ -43,8 +43,14 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: routeId } = useParams<{ id: string }>();
-  const id = employeeId?.toString() || routeId;
+  const id = employeeId || routeId;
   const isEditMode = !!id;
+
+  // Store hash separately to ensure it persists
+  const hashRef = useRef<string | undefined>(undefined);
+
+  // Create schema with translations
+  const employeeSchema = useMemo(() => createEmployeeSchema(t), [t]);
 
   // Form state
   const {
@@ -60,19 +66,21 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
       username: '',
       password: '',
       changePassword: !isEditMode,
-      blocked: false,
+      isBlocked: false,
     },
   });
 
   // Fetch employee data in edit mode
   const {
-    data: employee,
+    data: employeeData,
     loading: isFetching,
     error: fetchError,
-  } = useFetch<Employee | null>(
+  } = useFetch<(Employee & { hash?: string }) | null>(
     async () => {
       if (isEditMode && id) {
-        return await employeesApi.getById(parseInt(id, 10));
+        const data = await employeesApi.getById(id);
+        console.log('Fetched employee data:', data); // Debug log
+        return data;
       }
       return null;
     },
@@ -81,17 +89,21 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
 
   // Load employee data into form
   useEffect(() => {
-    if (employee) {
+    if (employeeData) {
+      console.log('Loading employee data with hash:', employeeData.hash); // Debug
+      // Store hash in ref
+      hashRef.current = employeeData.hash;
+      
       reset({
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        username: employee.username,
+        firstName: employeeData.firstName,
+        lastName: employeeData.lastName,
+        username: employeeData.username,
         password: '',
         changePassword: false,
-        blocked: employee.blocked,
+        isBlocked: employeeData.isBlocked,
       });
     }
-  }, [employee, reset]);
+  }, [employeeData, reset]);
 
   // Form submission handler
   const { isSubmitting, error: submitError, handleSubmit: handleFormSubmit } =
@@ -103,23 +115,37 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
       await handleFormSubmit(
         data,
         async (formData) => {
-          const employeeData: EmployeeFormData = {
+          const employeePayload: EmployeeFormData = {
             firstName: formData.firstName,
             lastName: formData.lastName,
-            username: formData.username,
-            blocked: formData.blocked,
-          };
+            isBlocked: formData.isBlocked,
+          } as EmployeeFormData;
+
+          // Username is only included when creating (cannot be changed in edit mode)
+          if (!isEditMode) {
+            employeePayload.username = formData.username;
+          }
+
+          // Include hash in edit mode for optimistic concurrency control
+          if (isEditMode && hashRef.current) {
+            console.log('Including hash in PUT:', hashRef.current); // Debug log
+            employeePayload.hash = hashRef.current;
+          } else if (isEditMode) {
+            console.warn('No hash available for PUT request!'); // Debug warning
+          }
+
+          console.log('Employee PUT payload:', employeePayload); // Debug log
 
           // Include password if in create mode or if changePassword is true
           if (!isEditMode || formData.changePassword) {
-            employeeData.password = formData.password;
-            employeeData.changePassword = formData.changePassword;
+            employeePayload.password = formData.password;
+            employeePayload.changePassword = formData.changePassword;
           }
 
           if (isEditMode && id) {
-            await employeesApi.update(parseInt(id, 10), employeeData);
+            await employeesApi.update(id, employeePayload);
           } else {
-            await employeesApi.create(employeeData);
+            await employeesApi.create(employeePayload);
           }
         },
         () => {
@@ -213,7 +239,7 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
             label={t('employees.username')}
             type="text"
             required
-            disabled={isSubmitting}
+            disabled={isSubmitting || isEditMode}
           />
         </Box>
 
@@ -244,7 +270,7 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
 
         <Box sx={{ mt: 2, mb: 2 }}>
           <FormField
-            name="blocked"
+            name="isBlocked"
             control={control}
             label={t('employees.blocked')}
             type="switch"

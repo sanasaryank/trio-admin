@@ -1,24 +1,24 @@
-import { mockEmployeesApi } from '../mock';
+import { realEmployeesApi } from '../real';
 import type { Employee, EmployeeFormData } from '../../types';
 
 export const employeesApi = {
   list: (): Promise<Employee[]> => {
-    return mockEmployeesApi.list();
+    return realEmployeesApi.list();
   },
 
-  getById: (id: number): Promise<Employee> => {
-    return mockEmployeesApi.getById(id);
+  getById: (id: string): Promise<Employee> => {
+    return realEmployeesApi.getById(id);
   },
 
   create: (data: EmployeeFormData): Promise<Employee> => {
-    return mockEmployeesApi.create(data);
+    return realEmployeesApi.create(data);
   },
 
-  update: (id: number, data: EmployeeFormData): Promise<Employee> => {
-    return mockEmployeesApi.update(id, data);
+  update: (id: string, data: EmployeeFormData): Promise<Employee> => {
+    return realEmployeesApi.update(id, data);
   },
 
-  block: (id: number, blocked: boolean): Promise<Employee> => {
-    return mockEmployeesApi.block(id, blocked);
+  block: (id: string, isBlocked: boolean): Promise<Employee> => {
+    return realEmployeesApi.block(id, isBlocked);
   },
 };

@@ -8,7 +8,7 @@ import Button from '../ui/atoms/Button';
 interface EmployeeFormDialogProps {
   open: boolean;
   onClose: () => void;
-  employeeId?: number;
+  employeeId?: string;
 }
 
 export const EmployeeFormDialog = ({ open, onClose, employeeId }: EmployeeFormDialogProps) => {

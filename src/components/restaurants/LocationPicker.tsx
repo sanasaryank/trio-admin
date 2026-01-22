@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import { Box, Typography } from '@mui/material';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { env } from '../../config/env';
 
 // Fix for default marker icon
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -17,14 +18,20 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Yerevan center as default
+const DEFAULT_CENTER: [number, number] = [
+  env.mapDefaultCenter.lat,
+  env.mapDefaultCenter.lng,
+];
+
 interface LocationPickerProps {
   lat: number;
   lng: number;
   onChange: (lat: number, lng: number) => void;
   onAddressChange?: (address: string) => void;
   onLocationMetadataChange?: (metadata: { city?: string; district?: string }) => void;
-  cities?: Array<{ id: number; name: string }>;
-  districts?: Array<{ id: number; name: string; cityId: number }>;
+  cities?: Array<{ id: string; name: string }>;
+  districts?: Array<{ id: string; name: string; cityId: string }>;
 }
 
 /**
@@ -60,7 +67,10 @@ MapCenterUpdater.displayName = 'MapCenterUpdater';
 
 /**
  * Reverse geocode coordinates to get address and location metadata using Nominatim API
+ * Note: May fail due to CORS restrictions in development (localhost)
  */
+let lastGeocodingTime = 0;
+
 const reverseGeocode = async (
   lat: number,
   lng: number
@@ -70,16 +80,26 @@ const reverseGeocode = async (
   district: string | null;
 }> => {
   try {
+    // Respect Nominatim rate limit (1 request per second)
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastGeocodingTime;
+    if (timeSinceLastRequest < 1000) {
+      await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastRequest));
+    }
+    lastGeocodingTime = Date.now();
+
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
       {
         headers: {
-          'Accept-Language': 'hy', // Armenian language
+          'Accept-Language': 'hy',
+          'User-Agent': 'TrioSuperAdmin/1.0.0 (contact: admin@trio.am)',
         },
       }
     );
 
     if (!response.ok) {
+      console.warn(`Reverse geocoding failed with status ${response.status}`);
       return { address: null, city: null, district: null };
     }
 
@@ -96,8 +116,9 @@ const reverseGeocode = async (
       parts.push(address.city || address.town || address.village);
     }
 
-    // Extract city and district
-    const city = address.city || address.town || address.village || null;
+    // Extract city (marz/province) and district
+    // For Armenia: state/county = marz (e.g., "Երևան"), suburb/neighbourhood = district
+    const city = address.state || address.county || address.city || address.town || address.village || null;
     const district =
       address.suburb ||
       address.neighbourhood ||
@@ -111,7 +132,12 @@ const reverseGeocode = async (
       district,
     };
   } catch (error) {
-    console.error('Reverse geocoding failed:', error);
+    // Silently fail on CORS or network errors (common in localhost development)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.info('Reverse geocoding unavailable (CORS restriction). Please select location manually from dropdowns.');
+    } else {
+      console.error('Reverse geocoding failed:', error);
+    }
     return { address: null, city: null, district: null };
   }
 };
@@ -123,12 +149,18 @@ const reverseGeocode = async (
 export const LocationPicker = React.memo<LocationPickerProps>(
   ({ lat, lng, onChange, onAddressChange, onLocationMetadataChange, cities, districts }) => {
     const markerRef = useRef<L.Marker>(null);
-    const [position, setPosition] = useState<[number, number]>([lat, lng]);
+    
+    // Use default center (Yerevan) if coordinates are 0,0 or invalid
+    const isValidCoordinates = lat !== 0 && lng !== 0 && lat !== null && lng !== null;
+    const initialPosition: [number, number] = isValidCoordinates ? [lat, lng] : DEFAULT_CENTER;
+    
+    const [position, setPosition] = useState<[number, number]>(initialPosition);
     const [isGeocoding, setIsGeocoding] = useState(false);
 
     // Update position when props change
     useEffect(() => {
-      setPosition([lat, lng]);
+      const isValid = lat !== 0 && lng !== 0 && lat !== null && lng !== null;
+      setPosition(isValid ? [lat, lng] : DEFAULT_CENTER);
     }, [lat, lng]);
 
     /**
@@ -174,8 +206,8 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       (cityName: string | null, districtName: string | null) => {
         if (!cities || !districts) return { cityId: undefined, districtId: undefined };
 
-        let matchedCityId: number | undefined;
-        let matchedDistrictId: number | undefined;
+        let matchedCityId: string | undefined;
+        let matchedDistrictId: string | undefined;
 
         // Try to find matching city
         if (cityName) {
@@ -184,11 +216,23 @@ export const LocationPicker = React.memo<LocationPickerProps>(
         }
 
         // Try to find matching district
-        if (districtName && matchedCityId) {
-          const matchedDistrict = districts.find(
-            (d) => d.cityId === matchedCityId && namesMatch(d.name, districtName)
-          );
-          matchedDistrictId = matchedDistrict?.id;
+        if (districtName) {
+          // First try to find district within matched city
+          if (matchedCityId) {
+            const matchedDistrict = districts.find(
+              (d) => d.cityId === matchedCityId && namesMatch(d.name, districtName)
+            );
+            matchedDistrictId = matchedDistrict?.id;
+          }
+          
+          // If not found and no city matched, search all districts
+          if (!matchedDistrictId && !matchedCityId) {
+            const matchedDistrict = districts.find((d) => namesMatch(d.name, districtName));
+            if (matchedDistrict) {
+              matchedDistrictId = matchedDistrict.id;
+              matchedCityId = matchedDistrict.cityId;
+            }
+          }
         }
 
         return { cityId: matchedCityId, districtId: matchedDistrictId };

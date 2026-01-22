@@ -39,7 +39,7 @@ import { DictionaryFormDialog } from '../../components/dictionaries/DictionaryFo
 
 export const DictionariesPage = () => {
   const { dictKey } = useParams<{ dictKey: DictionaryKey }>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
 
   // State for items and related data
@@ -47,7 +47,7 @@ export const DictionariesPage = () => {
 
   // Form dialog state
   const [formDialogOpen, _toggleFormDialog, setFormDialogOpen] = useToggle(false);
-  const [editingItemId, setEditingItemId] = useState<number | undefined>(undefined);
+  const [editingItemId, setEditingItemId] = useState<string | undefined>(undefined);
 
   // Hooks
   const filterDrawer = useDrawer();
@@ -76,7 +76,12 @@ export const DictionariesPage = () => {
   const { data: countries } = useFetch<Country[]>(
     async () => {
       if (dictKey !== 'cities') return [];
-      return (await dictionariesApi.list('countries')) as Country[];
+      try {
+        return (await dictionariesApi.list('countries')) as Country[];
+      } catch (error) {
+        console.error('Error loading countries:', error);
+        return [];
+      }
     },
     [dictKey]
   );
@@ -85,7 +90,12 @@ export const DictionariesPage = () => {
   const { data: cities } = useFetch<City[]>(
     async () => {
       if (dictKey !== 'districts') return [];
-      return (await dictionariesApi.list('cities')) as City[];
+      try {
+        return (await dictionariesApi.list('cities')) as City[];
+      } catch (error) {
+        console.error('Error loading cities:', error);
+        return [];
+      }
     },
     [dictKey]
   );
@@ -94,15 +104,18 @@ export const DictionariesPage = () => {
   useMemo(() => {
     if (fetchedItems) {
       setItems(fetchedItems);
+    } else if (fetchError) {
+      // Clear items on error to prevent showing stale data
+      setItems([]);
     }
-  }, [fetchedItems]);
+  }, [fetchedItems, fetchError]);
 
   // Apply filters to items
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       if (filters.status !== 'all') {
         const isBlocked = filters.status === 'blocked';
-        if (item.blocked !== isBlocked) return false;
+        if (item.isBlocked !== isBlocked) return false;
       }
       return true;
     });
@@ -117,8 +130,27 @@ export const DictionariesPage = () => {
   });
 
   // Memoized helper functions for related data
+  const getDisplayName = useCallback(
+    (item: DictionaryItemType): string => {
+      // For geographic data (countries, cities, districts), name is a string
+      if (typeof item.name === 'string') {
+        return item.name;
+      }
+      // For dictionaries, name is multilingual object
+      const currentLang = i18n.language.toUpperCase();
+      if (currentLang === 'HY' || currentLang === 'ARM') {
+        return item.name.ARM || item.name.ENG;
+      } else if (currentLang === 'RU' || currentLang === 'RUS') {
+        return item.name.RUS || item.name.ENG;
+      } else {
+        return item.name.ENG || item.name.ARM;
+      }
+    },
+    [i18n.language]
+  );
+
   const getCountryName = useCallback(
-    (countryId: number): string => {
+    (countryId: string): string => {
       const country = countries?.find((c) => c.id === countryId);
       return country?.name || `Country #${countryId}`;
     },
@@ -126,7 +158,7 @@ export const DictionariesPage = () => {
   );
 
   const getCityName = useCallback(
-    (cityId: number): string => {
+    (cityId: string): string => {
       const city = cities?.find((c) => c.id === cityId);
       return city?.name || `City #${cityId}`;
     },
@@ -146,15 +178,18 @@ export const DictionariesPage = () => {
 
   const handleBlockToggle = useCallback(
     (item: DictionaryItemType) => {
+      const displayName = getDisplayName(item);
       confirmDialog.open({
-        title: item.blocked ? t('dictionaries.unblockConfirmTitle') : t('dictionaries.blockConfirmTitle'),
-        message: item.blocked
-          ? t('dictionaries.unblockConfirmMessage', { name: item.name })
-          : t('dictionaries.blockConfirmMessage', { name: item.name }),
+        title: item.isBlocked ? t('dictionaries.unblockConfirmTitle') : t('dictionaries.blockConfirmTitle'),
+        message: item.isBlocked
+          ? t('dictionaries.unblockConfirmMessage', { name: displayName })
+          : t('dictionaries.blockConfirmMessage', { name: displayName }),
+        confirmText: t('common.confirm'),
+        cancelText: t('common.cancel'),
         onConfirm: async () => {
           if (!dictKey) return;
           try {
-            await dictionariesApi.block(dictKey, item.id, !item.blocked);
+            await dictionariesApi.block(dictKey, item.id, !item.isBlocked);
             await loadData();
             enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
           } catch (err) {
@@ -164,10 +199,10 @@ export const DictionariesPage = () => {
         },
       });
     },
-    [confirmDialog, dictKey, loadData, t, enqueueSnackbar]
+    [confirmDialog, dictKey, loadData, t, enqueueSnackbar, getDisplayName]
   );
 
-  const handleEdit = useCallback((id: number) => {
+  const handleEdit = useCallback((id: string) => {
     setEditingItemId(id);
     setFormDialogOpen(true);
   }, [setFormDialogOpen]);
@@ -201,6 +236,7 @@ export const DictionariesPage = () => {
         id: 'name',
         label: t('dictionaries.name'),
         sortable: true,
+        render: (item) => getDisplayName(item),
       },
     ];
 
@@ -230,7 +266,7 @@ export const DictionariesPage = () => {
       render: (item) => (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
           <Switch
-            checked={!item.blocked}
+            checked={!item.isBlocked}
             onChange={() => handleBlockToggle(item)}
             color="primary"
           />
@@ -245,7 +281,7 @@ export const DictionariesPage = () => {
     });
 
     return baseColumns;
-  }, [dictKey, getCountryName, getCityName, handleBlockToggle, handleEdit, t]);
+  }, [dictKey, getCountryName, getCityName, getDisplayName, handleBlockToggle, handleEdit, t]);
 
   if (!dictKey) {
     return (

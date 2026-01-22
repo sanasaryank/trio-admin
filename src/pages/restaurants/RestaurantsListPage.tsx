@@ -43,15 +43,12 @@ import {
 } from '../../hooks';
 
 // Utils
-import { formatTimestamp } from '../../utils/dateUtils';
+import { getDisplayName } from '../../utils/dictionaryUtils';
 
 // Types
 import type {
-  Restaurant,
+  RestaurantListItem,
   RestaurantFilters,
-  Country,
-  City,
-  District,
   RestaurantType,
   PriceSegment,
   MenuType,
@@ -61,20 +58,17 @@ import type {
 type SortField =
   | 'id'
   | 'name'
-  | 'cityId'
-  | 'districtId'
-  | 'createdAt'
-  | 'lastClientActivityAt'
-  | 'lastRestaurantActivityAt';
+  | 'cityName'
+  | 'districtName';
 
 interface AuditDrawerState {
-  restaurantId: number | null;
+  restaurantId: string | null;
   restaurantName: string;
 }
 
 interface FormDialogState {
   open: boolean;
-  restaurantId?: number;
+  restaurantId?: string;
 }
 
 export const RestaurantsListPage = () => {
@@ -93,43 +87,62 @@ export const RestaurantsListPage = () => {
     loading: isLoading,
     error: fetchError,
     refetch: loadRestaurants,
-  } = useFetch<Restaurant[]>(
-    async () => await restaurantsApi.list(),
+  } = useFetch<RestaurantListItem[]>(
+    async () => {
+      try {
+        return await restaurantsApi.list();
+      } catch (error) {
+        console.error('Error loading restaurants:', error);
+        return [];
+      }
+    },
     []
   );
 
-  // Fetch dictionaries
+  // Lazy load dictionaries only when filter drawer is opened
+  const [dictionariesLoaded, setDictionariesLoaded] = useState(false);
   const { data: dictionaries } = useFetch(
     async () => {
-      const [
-        countriesData,
-        citiesData,
-        districtsData,
-        restaurantTypesData,
-        priceSegmentsData,
-        menuTypesData,
-        integrationTypesData,
-      ] = await Promise.all([
-        dictionariesApi.list('countries'),
-        dictionariesApi.list('cities'),
-        dictionariesApi.list('districts'),
-        dictionariesApi.list('restaurant-types'),
-        dictionariesApi.list('price-segments'),
-        dictionariesApi.list('menu-types'),
-        dictionariesApi.list('integration-types'),
-      ]);
+      if (!dictionariesLoaded) return null;
+      
+      try {
+        const [
+          locationsData,
+          restaurantTypesData,
+          priceSegmentsData,
+          menuTypesData,
+          integrationTypesData,
+        ] = await Promise.all([
+          restaurantsApi.getLocations().catch(() => ({ countries: [], cities: [], districts: [] })),
+          dictionariesApi.list('restaurant-types').catch(() => []),
+          dictionariesApi.list('price-segments').catch(() => []),
+          dictionariesApi.list('menu-types').catch(() => []),
+          dictionariesApi.list('integration-types').catch(() => []),
+        ]);
 
-      return {
-        countries: countriesData as Country[],
-        cities: citiesData as City[],
-        districts: districtsData as District[],
-        restaurantTypes: restaurantTypesData as RestaurantType[],
-        priceSegments: priceSegmentsData as PriceSegment[],
-        menuTypes: menuTypesData as MenuType[],
-        integrationTypes: integrationTypesData as IntegrationType[],
-      };
+        return {
+          countries: locationsData.countries || [],
+          cities: locationsData.cities || [],
+          districts: locationsData.districts || [],
+          restaurantTypes: (restaurantTypesData as RestaurantType[]) || [],
+          priceSegments: (priceSegmentsData as PriceSegment[]) || [],
+          menuTypes: (menuTypesData as MenuType[]) || [],
+          integrationTypes: (integrationTypesData as IntegrationType[]) || [],
+        };
+      } catch (error) {
+        console.error('Error loading dictionaries:', error);
+        return {
+          countries: [],
+          cities: [],
+          districts: [],
+          restaurantTypes: [],
+          priceSegments: [],
+          menuTypes: [],
+          integrationTypes: [],
+        };
+      }
     },
-    []
+    [dictionariesLoaded]
   );
 
   const {
@@ -171,20 +184,7 @@ export const RestaurantsListPage = () => {
     restaurantName: '',
   });
 
-  // Helper functions
-  const getCityName = useCallback(
-    (cityId: number): string => {
-      return cities.find((c) => c.id === cityId)?.name || `#${cityId}`;
-    },
-    [cities]
-  );
-
-  const getDistrictName = useCallback(
-    (districtId: number): string => {
-      return districts.find((d) => d.id === districtId)?.name || `#${districtId}`;
-    },
-    [districts]
-  );
+  // Helper functions - removed getCityName and getDistrictName as names come from API
 
   // Filtered cities based on selected country
   const filteredCities = useMemo(() => {
@@ -204,61 +204,57 @@ export const RestaurantsListPage = () => {
       // Status filter
       if (currentFilters.status !== 'all') {
         const isBlocked = currentFilters.status === 'blocked';
-        if (restaurant.blocked !== isBlocked) return false;
+        if (restaurant.isBlocked !== isBlocked) return false;
       }
 
       // Search filter
       if (currentFilters.search) {
         const searchLower = currentFilters.search.toLowerCase();
-        const matchesId = restaurant.id.toString().includes(searchLower);
-        const matchesName = restaurant.name.toLowerCase().includes(searchLower);
-        if (!matchesId && !matchesName) return false;
+        const restaurantName = typeof restaurant.name === 'string' ? restaurant.name : getDisplayName(restaurant.name);
+        const matchesName = restaurantName.toLowerCase().includes(searchLower);
+        const matchesCity = restaurant.cityName.toLowerCase().includes(searchLower);
+        const matchesDistrict = restaurant.districtName.toLowerCase().includes(searchLower);
+        if (!matchesName && !matchesCity && !matchesDistrict) return false;
       }
 
-      // Country filter
-      if (currentFilters.countryId && restaurant.countryId !== currentFilters.countryId) {
-        return false;
+      // Country filter - match by finding cities in that country
+      if (currentFilters.countryId) {
+        const citiesInCountry = cities.filter(c => c.countryId === currentFilters.countryId);
+        const cityNamesInCountry = citiesInCountry.map(c => c.name);
+        if (!cityNamesInCountry.includes(restaurant.cityName)) {
+          return false;
+        }
       }
 
-      // City filter
-      if (currentFilters.cityId && restaurant.cityId !== currentFilters.cityId) {
-        return false;
+      // City filter - match by city name
+      if (currentFilters.cityId) {
+        const selectedCity = cities.find(c => c.id === currentFilters.cityId);
+        if (!selectedCity || restaurant.cityName !== selectedCity.name) {
+          return false;
+        }
       }
 
-      // District filter
-      if (currentFilters.districtId && restaurant.districtId !== currentFilters.districtId) {
-        return false;
+      // District filter - match by district name
+      if (currentFilters.districtId) {
+        const selectedDistrict = districts.find(d => d.id === currentFilters.districtId);
+        if (!selectedDistrict || restaurant.districtName !== selectedDistrict.name) {
+          return false;
+        }
       }
 
-      // Type filter
-      if (currentFilters.typeId && restaurant.typeId !== currentFilters.typeId) {
-        return false;
-      }
-
-      // Price segment filter
-      if (currentFilters.priceSegmentId && restaurant.priceSegmentId !== currentFilters.priceSegmentId) {
-        return false;
-      }
-
-      // Menu type filter
-      if (currentFilters.menuTypeId && restaurant.menuTypeId !== currentFilters.menuTypeId) {
-        return false;
-      }
-
-      // Integration type filter
-      if (currentFilters.integrationTypeId && restaurant.integrationTypeId !== currentFilters.integrationTypeId) {
-        return false;
-      }
+      // Note: Type, price segment, menu type, and integration type filters 
+      // are not available in the list API response, so they're removed
+      // These filters would need to be applied server-side
 
       return true;
     });
-  }, [restaurants, applyFilters, filters]);
+  }, [restaurants, applyFilters, filters, cities, districts]);
 
   // Table state with sorting and pagination
-  const tableState = useTableState<Restaurant>({
+  const tableState = useTableState<RestaurantListItem>({
     data: filteredRestaurants || [],
     initialRowsPerPage: 10,
-    defaultSortColumn: 'id' as keyof Restaurant,
+    defaultSortColumn: 'id' as keyof RestaurantListItem,
     defaultSortDirection: 'asc',
   });
 
@@ -273,27 +269,19 @@ export const RestaurantsListPage = () => {
 
         switch (sortField) {
           case 'id':
-            compareValue = a.id - b.id;
+            compareValue = a.id.localeCompare(b.id);
             break;
-          case 'name':
-            compareValue = a.name.localeCompare(b.name);
+          case 'name': {
+            const aName = typeof a.name === 'string' ? a.name : getDisplayName(a.name);
+            const bName = typeof b.name === 'string' ? b.name : getDisplayName(b.name);
+            compareValue = aName.localeCompare(bName);
             break;
-          case 'cityId':
-            compareValue = getCityName(a.cityId).localeCompare(getCityName(b.cityId));
+          }
+          case 'cityName':
+            compareValue = a.cityName.localeCompare(b.cityName);
             break;
-          case 'districtId':
-            compareValue = getDistrictName(a.districtId).localeCompare(
-              getDistrictName(b.districtId)
-            );
-            break;
-          case 'createdAt':
-            compareValue = a.createdAt - b.createdAt;
-            break;
-          case 'lastClientActivityAt':
-            compareValue = (a.lastClientActivityAt || 0) - (b.lastClientActivityAt || 0);
-            break;
-          case 'lastRestaurantActivityAt':
-            compareValue = (a.lastRestaurantActivityAt || 0) - (b.lastRestaurantActivityAt || 0);
+          case 'districtName':
+            compareValue = a.districtName.localeCompare(b.districtName);
             break;
         }
 
@@ -309,8 +297,6 @@ export const RestaurantsListPage = () => {
     tableState.sortDirection,
     tableState.page,
     tableState.rowsPerPage,
-    getCityName,
-    getDistrictName,
   ]);
 
   // Handlers
@@ -330,18 +316,22 @@ export const RestaurantsListPage = () => {
   }, [resetFilters, resetTempFilters, tableState, filterDrawer]);
 
   const handleBlockToggle = useCallback(
-    (restaurant: Restaurant) => {
+    (restaurant: RestaurantListItem) => {
       confirmDialog.open({
-        title: restaurant.blocked ? t('restaurants.unblockConfirmTitle') : t('restaurants.blockConfirmTitle'),
-        message: restaurant.blocked
+        title: restaurant.isBlocked ? t('restaurants.unblockConfirmTitle') : t('restaurants.blockConfirmTitle'),
+        message: restaurant.isBlocked
           ? t('restaurants.unblockConfirmMessage', { name: restaurant.name })
           : t('restaurants.blockConfirmMessage', { name: restaurant.name }),
+        confirmText: t('common.confirm'),
+        cancelText: t('common.cancel'),
         onConfirm: async () => {
           try {
-            await restaurantsApi.block(restaurant.id, !restaurant.blocked);
+            await restaurantsApi.block(restaurant.id, !restaurant.isBlocked);
             await loadRestaurants();
           } catch (err) {
             console.error('Error toggling block status:', err);
+            // Optionally show error message to user
+            alert(t('common.error') + ': ' + (err as Error).message);
           }
         },
       });
@@ -350,17 +340,22 @@ export const RestaurantsListPage = () => {
   );
 
   const handleEdit = useCallback(
-    (id: number) => {
+    (id: string) => {
       setFormDialog({ open: true, restaurantId: id });
     },
     []
   );
 
   const handleViewAudit = useCallback(
-    (restaurant: Restaurant) => {
+    (restaurant: RestaurantListItem) => {
+      // Convert name to string if it's a DictionaryName object
+      const displayName = typeof restaurant.name === 'string' 
+        ? restaurant.name 
+        : getDisplayName(restaurant.name);
+      
       setAuditState({
         restaurantId: restaurant.id,
-        restaurantName: restaurant.name,
+        restaurantName: displayName,
       });
       auditDrawer.open();
     },
@@ -377,7 +372,7 @@ export const RestaurantsListPage = () => {
   }, [loadRestaurants]);
 
   const handleQRCodes = useCallback(
-    (id: number) => {
+    (id: string) => {
       navigate(`/restaurants/${id}/qr`);
     },
     [navigate]
@@ -392,8 +387,8 @@ export const RestaurantsListPage = () => {
   }, []);
 
   const handleCountryChange = useCallback(
-    (value: string | number) => {
-      const countryId = value ? Number(value) : undefined;
+    (value: string | number | number[]) => {
+      const countryId = value && !Array.isArray(value) ? String(value) : undefined;
       updateTempFilter('countryId', countryId);
       updateTempFilter('cityId', undefined);
       updateTempFilter('districtId', undefined);
@@ -402,77 +397,62 @@ export const RestaurantsListPage = () => {
   );
 
   const handleCityChange = useCallback(
-    (value: string | number) => {
-      const cityId = value ? Number(value) : undefined;
+    (value: string | number | number[]) => {
+      const cityId = value && !Array.isArray(value) ? String(value) : undefined;
       updateTempFilter('cityId', cityId);
       updateTempFilter('districtId', undefined);
     },
     [updateTempFilter]
   );
 
-  // Sync temp filters when drawer opens
+  // Sync temp filters when drawer opens and load dictionaries if needed
   useEffect(() => {
     if (filterDrawer.isOpen) {
       Object.keys(filters).forEach((key) => {
         updateTempFilter(key as keyof RestaurantFilters, filters[key as keyof RestaurantFilters]);
       });
+      // Load dictionaries on first filter drawer open
+      if (!dictionariesLoaded) {
+        setDictionariesLoaded(true);
+      }
     }
-  }, [filterDrawer.isOpen]);
+  }, [filterDrawer.isOpen, filters, updateTempFilter, dictionariesLoaded]);
 
   // Table columns
-  const columns = useMemo<Column<Restaurant>[]>(
+  const columns = useMemo<Column<RestaurantListItem>[]>(
     () => [
-      {
-        id: 'id',
-        label: 'ID',
-        sortable: true,
-        width: 80,
-      },
       {
         id: 'name',
         label: t('restaurants.name'),
         sortable: true,
-        render: (restaurant) => (
-          <Link href={restaurant.crmUrl} external>
-            {restaurant.name}
-          </Link>
-        ),
+        render: (restaurant) => {
+          // Handle both string and DictionaryName object
+          const displayName = typeof restaurant.name === 'string' 
+            ? restaurant.name 
+            : getDisplayName(restaurant.name);
+          
+          // Only render as link if crmUrl exists
+          if (restaurant.crmUrl) {
+            return (
+              <Link href={restaurant.crmUrl} external>
+                {displayName}
+              </Link>
+            );
+          }
+          return displayName;
+        },
       },
       {
-        id: 'cityId',
+        id: 'cityName',
         label: t('restaurants.city'),
         sortable: true,
-        render: (restaurant) => getCityName(restaurant.cityId),
+        render: (restaurant) => restaurant.cityName,
       },
       {
-        id: 'districtId',
+        id: 'districtName',
         label: t('restaurants.district'),
         sortable: true,
-        render: (restaurant) => getDistrictName(restaurant.districtId),
-      },
-      {
-        id: 'createdAt',
-        label: t('restaurants.created'),
-        sortable: true,
-        render: (restaurant) => formatTimestamp(restaurant.createdAt),
-      },
-      {
-        id: 'lastClientActivityAt',
-        label: t('restaurants.lastClientActivity'),
-        sortable: true,
-        render: (restaurant) =>
-          restaurant.lastClientActivityAt
-            ? formatTimestamp(restaurant.lastClientActivityAt)
-            : '-',
-      },
-      {
-        id: 'lastRestaurantActivityAt',
-        label: t('restaurants.lastRestaurantActivity'),
-        sortable: true,
-        render: (restaurant) =>
-          restaurant.lastRestaurantActivityAt
-            ? formatTimestamp(restaurant.lastRestaurantActivityAt)
-            : '-',
+        render: (restaurant) => restaurant.districtName,
       },
       {
         id: 'actions',
@@ -488,8 +468,9 @@ export const RestaurantsListPage = () => {
             }}
           >
             <Switch
-              checked={!restaurant.blocked}
-              onChange={() => handleBlockToggle(restaurant)}
+              checked={!restaurant.isBlocked}
+              disabled={true}
+              onChange={() => {}}
             />
             <IconButton
               onClick={() => handleEdit(restaurant.id)}
@@ -526,8 +507,6 @@ export const RestaurantsListPage = () => {
       },
     ],
     [
-      getCityName,
-      getDistrictName,
       handleBlockToggle,
       handleEdit,
       handleViewAudit,
@@ -576,7 +555,7 @@ export const RestaurantsListPage = () => {
         columns={columns}
         data={sortedAndPaginatedData}
         loading={isLoading}
-        onSort={(column) => tableState.handleSort(column as keyof Restaurant)}
+        onSort={(column) => tableState.handleSort(column as keyof RestaurantListItem)}
         sortColumn={tableState.sortColumn ?? undefined}
         sortDirection={tableState.sortDirection}
         rowKey="id"
@@ -622,7 +601,7 @@ export const RestaurantsListPage = () => {
             { value: '', label: t('common.all') },
             ...countries.map((country) => ({
               value: country.id,
-              label: country.name,
+              label: getDisplayName(country.name),
             })),
           ]}
         />
@@ -636,7 +615,7 @@ export const RestaurantsListPage = () => {
             { value: '', label: t('common.all') },
             ...filteredCities.map((city) => ({
               value: city.id,
-              label: city.name,
+              label: getDisplayName(city.name),
             })),
           ]}
           disabled={!tempFilters.countryId}
@@ -647,13 +626,13 @@ export const RestaurantsListPage = () => {
           label={t('restaurants.district')}
           value={tempFilters.districtId || ''}
           onChange={(value) =>
-            updateTempFilter('districtId', value ? Number(value) : undefined)
+            updateTempFilter('districtId', value && !Array.isArray(value) ? String(value) : undefined)
           }
           options={[
             { value: '', label: t('common.all') },
             ...filteredDistricts.map((district) => ({
               value: district.id,
-              label: district.name,
+              label: getDisplayName(district.name),
             })),
           ]}
           disabled={!tempFilters.cityId}
@@ -662,45 +641,45 @@ export const RestaurantsListPage = () => {
         <Select
           name="restaurantType"
           label={t('restaurants.type')}
-          value={tempFilters.typeId || ''}
-          onChange={(value) => updateTempFilter('typeId', value ? Number(value) : undefined)}
+          value={(tempFilters.typeId || []) as any}
+          onChange={(value) => updateTempFilter('typeId', Array.isArray(value) && value.length > 0 ? value.map(String) : undefined)}
           options={[
-            { value: '', label: t('common.all') },
             ...restaurantTypes.map((type) => ({
               value: type.id,
-              label: type.name,
+              label: getDisplayName(type.name),
             })),
           ]}
+          multiple={true}
         />
 
         <Select
           name="priceSegment"
           label={t('restaurants.priceSegment')}
-          value={tempFilters.priceSegmentId || ''}
+          value={(tempFilters.priceSegmentId || []) as any}
           onChange={(value) =>
-            updateTempFilter('priceSegmentId', value ? Number(value) : undefined)
+            updateTempFilter('priceSegmentId', Array.isArray(value) && value.length > 0 ? value.map(String) : undefined)
           }
           options={[
-            { value: '', label: t('common.all') },
             ...priceSegments.map((segment) => ({
               value: segment.id,
-              label: segment.name,
+              label: getDisplayName(segment.name),
             })),
           ]}
+          multiple={true}
         />
 
         <Select
           name="menuType"
           label={t('restaurants.menuType')}
-          value={tempFilters.menuTypeId || ''}
-          onChange={(value) => updateTempFilter('menuTypeId', value ? Number(value) : undefined)}
+          value={(tempFilters.menuTypeId || []) as any}
+          onChange={(value) => updateTempFilter('menuTypeId', Array.isArray(value) && value.length > 0 ? value.map(String) : undefined)}
           options={[
-            { value: '', label: t('common.all') },
             ...menuTypes.map((type) => ({
               value: type.id,
-              label: type.name,
+              label: getDisplayName(type.name),
             })),
           ]}
+          multiple={true}
         />
 
         <Select
@@ -708,13 +687,13 @@ export const RestaurantsListPage = () => {
           label={t('restaurants.integrationType')}
           value={tempFilters.integrationTypeId || ''}
           onChange={(value) =>
-            updateTempFilter('integrationTypeId', value ? Number(value) : undefined)
+            updateTempFilter('integrationTypeId', value && !Array.isArray(value) ? String(value) : undefined)
           }
           options={[
             { value: '', label: t('common.all') },
             ...integrationTypes.map((type) => ({
               value: type.id,
-              label: type.name,
+              label: getDisplayName(type.name),
             })),
           ]}
         />
