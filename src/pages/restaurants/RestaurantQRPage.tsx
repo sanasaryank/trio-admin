@@ -86,7 +86,7 @@ export const RestaurantQRPage = () => {
       try {
         return await restaurantsApi.getById(id);
       } catch (error) {
-        console.error('Error loading restaurant:', error);
+        logger.error('Error loading restaurant', error as Error, { restaurantId: id });
         return null;
       }
     },
@@ -105,7 +105,7 @@ export const RestaurantQRPage = () => {
       try {
         return await restaurantsApi.getQRCodes(id);
       } catch (error) {
-        console.error('Error loading QR codes:', error);
+        logger.error('Error loading QR codes', error as Error, { restaurantId: id });
         return [];
       }
     },
@@ -340,7 +340,7 @@ export const RestaurantQRPage = () => {
               </Box>
             );
           } catch (err) {
-            console.error('Error rendering QR code:', err);
+            logger.error('Error rendering QR code', err as Error);
             return <span>-</span>;
           }
         },
@@ -355,7 +355,7 @@ export const RestaurantQRPage = () => {
             if (typeof id === 'object') return <span>{JSON.stringify(id)}</span>;
             return <span>{id || '-'}</span>;
           } catch (err) {
-            console.error('Error rendering ID:', err);
+            logger.error('Error rendering ID', err as Error);
             return <span>-</span>;
           }
         },
@@ -375,7 +375,7 @@ export const RestaurantQRPage = () => {
               />
             );
           } catch (err) {
-            console.error('Error rendering assigned status:', err);
+            logger.error('Error rendering assigned status', err as Error);
             return <span>-</span>;
           }
         },
@@ -399,7 +399,7 @@ export const RestaurantQRPage = () => {
               />
             );
           } catch (err) {
-            console.error('Error rendering type:', err);
+            logger.error('Error rendering type', err as Error);
             return <span>-</span>;
           }
         },
@@ -425,7 +425,7 @@ export const RestaurantQRPage = () => {
               </Box>
             );
           } catch (err) {
-            console.error('Error rendering actions:', err);
+            logger.error('Error rendering actions', err as Error);
             return <span>-</span>;
           }
         },

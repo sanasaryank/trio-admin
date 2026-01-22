@@ -26,6 +26,7 @@ import { ConnectionDataFields } from '../../components/restaurants/ConnectionDat
 import { useFetch, useFormSubmit } from '../../hooks';
 
 // Utils
+import { logger } from '../../utils/logger';
 import { getDisplayName } from '../../utils/dictionaryUtils';
 
 // Types
@@ -177,7 +178,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
       try {
         return await restaurantsApi.getById(id);
       } catch (error) {
-        console.error('Error loading restaurant:', error);
+        logger.error('Error loading restaurant', error as Error, { restaurantId: id });
         return null;
       }
     },
@@ -212,7 +213,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
           integrationTypes: (integrationTypesData as IntegrationType[]) || [],
         };
       } catch (error) {
-        console.error('Error loading dictionaries:', error);
+        logger.error('Error loading dictionaries', error as Error);
         // Return empty data to prevent crash
         return {
           countries: [],

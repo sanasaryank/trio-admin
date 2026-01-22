@@ -43,6 +43,7 @@ import {
 } from '../../hooks';
 
 // Utils
+import { logger } from '../../utils/logger';
 import { getDisplayName } from '../../utils/dictionaryUtils';
 
 // Types
@@ -92,7 +93,7 @@ export const RestaurantsListPage = () => {
       try {
         return await restaurantsApi.list();
       } catch (error) {
-        console.error('Error loading restaurants:', error);
+        logger.error('Error loading restaurants', error as Error);
         return [];
       }
     },
@@ -130,7 +131,7 @@ export const RestaurantsListPage = () => {
           integrationTypes: (integrationTypesData as IntegrationType[]) || [],
         };
       } catch (error) {
-        console.error('Error loading dictionaries:', error);
+        logger.error('Error loading dictionaries', error as Error);
         return {
           countries: [],
           cities: [],
@@ -329,7 +330,7 @@ export const RestaurantsListPage = () => {
             await restaurantsApi.block(restaurant.id, !restaurant.isBlocked);
             await loadRestaurants();
           } catch (err) {
-            console.error('Error toggling block status:', err);
+            logger.error('Error toggling block status', err as Error, { restaurantId: restaurant.id });
             // Optionally show error message to user
             alert(t('common.error') + ': ' + (err as Error).message);
           }
