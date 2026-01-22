@@ -21,7 +21,7 @@ const getInitialSession = (): User | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    logger.error('Failed to parse session', error as Error);
+    logger.error('Failed to parse session', error as Error);  
   }
   return null;
 };

@@ -54,7 +54,7 @@ export const realAuthApi = {
       try {
         return JSON.parse(storedSession);
       } catch (error) {
-        logger.error('Failed to parse stored session', error as Error);
+        logger. error('Failed to parse stored session', error as Error);
       }
     }
 

@@ -9,6 +9,7 @@ import { employeesApi } from '../../api/endpoints';
 import { FormField } from '../../components/ui/molecules';
 import { Button } from '../../components/ui/atoms';
 import { useFormSubmit, useFetch } from '../../hooks';
+import { logger } from '../../utils/logger';
 import type { EmployeeFormData, Employee } from '../../types';
 
 const createEmployeeSchema = (t: (key: string) => string) => z.object({
@@ -79,7 +80,7 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
     async () => {
       if (isEditMode && id) {
         const data = await employeesApi.getById(id);
-        console.log('Fetched employee data:', data); // Debug log
+        logger. debug('Fetched employee data', { data });
         return data;
       }
       return null;
@@ -90,7 +91,7 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
   // Load employee data into form
   useEffect(() => {
     if (employeeData) {
-      console.log('Loading employee data with hash:', employeeData.hash); // Debug
+      logger.debug('Loading employee data with hash', { hash: employeeData.hash });
       // Store hash in ref
       hashRef.current = employeeData.hash;
       
@@ -128,13 +129,12 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
 
           // Include hash in edit mode for optimistic concurrency control
           if (isEditMode && hashRef.current) {
-            console.log('Including hash in PUT:', hashRef.current); // Debug log
             employeePayload.hash = hashRef.current;
           } else if (isEditMode) {
-            console.warn('No hash available for PUT request!'); // Debug warning
+            logger.warn('No hash available for PUT request!');
           }
 
-          console.log('Employee PUT payload:', employeePayload); // Debug log
+          logger.debug('Employee PUT payload', { employeePayload });
 
           // Include password if in create mode or if changePassword is true
           if (!isEditMode || formData.changePassword) {

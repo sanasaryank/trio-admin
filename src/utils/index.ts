@@ -3,6 +3,16 @@
  * Provides centralized exports for utility functions
  */
 
-export * from './dateUtils';
-export * from './dictionaryUtils';
+// Logger
 export * from './logger';
+export { logger, createLogger, PerformanceMonitor, measureAsync, measure } from './logger';
+
+// Date utilities
+export * from './dateUtils';
+
+// Dictionary utilities
+export * from './dictionaryUtils';
+
+// Re-export types
+export type { LogLevel } from './logger';
+export type { DictionaryFieldsConfig } from './dictionaryUtils';
