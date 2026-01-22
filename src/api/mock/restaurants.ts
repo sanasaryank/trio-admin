@@ -1,5 +1,6 @@
 import { getDatabase, saveDatabase, getSession, generateHash } from './storage';
 import { addAuditEvent } from './audit';
+import { logger } from '../../utils/logger';
 import type { Restaurant, RestaurantListItem, RestaurantFormData, QRCode, QRBatchCreateRequest, LocationsResponse } from '../../types';
 
 export const mockRestaurantsApi = {
@@ -18,7 +19,7 @@ export const mockRestaurantsApi = {
       let restaurantName = 'Unknown';
       try {
         if (!restaurant.name) {
-          console.warn('Restaurant missing name:', restaurant.id);
+          logger.warn('Restaurant missing name', { restaurantId: restaurant.id });
           restaurantName = 'Unknown';
         } else if (typeof restaurant.name === 'string') {
           restaurantName = restaurant.name;
@@ -35,7 +36,7 @@ export const mockRestaurantsApi = {
           restaurantName = String(restaurant.name);
         }
       } catch (error) {
-        console.error('Error extracting restaurant name:', error, restaurant);
+        logger.error('Error extracting restaurant name', error as Error, { restaurantId: restaurant.id });
         restaurantName = `Restaurant ${restaurant.id}`;
       }
       

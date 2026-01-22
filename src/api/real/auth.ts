@@ -1,6 +1,7 @@
 import type { LoginRequest, LoginResponse, User } from '../../types';
 import { realApiFetch } from './client';
 import { env } from '../../config/env';
+import { logger } from '../../utils/logger';
 
 const AUTH_BASE_URL = `${env.apiBaseUrl}/admin/auth`;
 
@@ -53,7 +54,7 @@ export const realAuthApi = {
       try {
         return JSON.parse(storedSession);
       } catch (error) {
-        console.error('Failed to parse stored session:', error);
+        logger.error('Failed to parse stored session', error as Error);
       }
     }
 
@@ -68,7 +69,7 @@ export const realAuthApi = {
         return data;
       }
     } catch (error) {
-      console.warn('/me endpoint not available, using stored session');
+      logger.warn('/me endpoint not available, using stored session');
     }
 
     // If backend call fails but we have token, throw error

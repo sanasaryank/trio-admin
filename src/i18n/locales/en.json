@@ -43,7 +43,21 @@
     "yes": "Yes",
     "no": "No",
     "confirm": "Confirm",
-    "required": "Required"
+    "required": "Required",
+    "retry": "Retry",
+    "reload": "Reload"
+  },
+  "error": {
+    "somethingWentWrong": "Something went wrong",
+    "pleaseRefresh": "Please refresh the page or try again later.",
+    "restaurantsLoadFailed": "Failed to load restaurants",
+    "restaurantsLoadFailedMessage": "An error occurred while loading the restaurants. Please try again.",
+    "employeesLoadFailed": "Failed to load employees",
+    "employeesLoadFailedMessage": "An error occurred while loading the employees. Please try again.",
+    "dictionariesLoadFailed": "Failed to load dictionaries",
+    "dictionariesLoadFailedMessage": "An error occurred while loading the dictionaries. Please try again.",
+    "statisticsLoadFailed": "Failed to load statistics",
+    "statisticsLoadFailedMessage": "An error occurred while loading the statistics. Please try again."
   },
   "auth": {
     "login": "Login",

@@ -4,6 +4,7 @@ import { Box, Typography } from '@mui/material';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { env } from '../../config/env';
+import { logger } from '../../utils/logger';
 
 // Fix for default marker icon
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -99,7 +100,7 @@ const reverseGeocode = async (
     );
 
     if (!response.ok) {
-      console.warn(`Reverse geocoding failed with status ${response.status}`);
+      logger.warn('Reverse geocoding failed', { status: response.status });
       return { address: null, city: null, district: null };
     }
 
@@ -134,9 +135,9 @@ const reverseGeocode = async (
   } catch (error) {
     // Silently fail on CORS or network errors (common in localhost development)
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.info('Reverse geocoding unavailable (CORS restriction). Please select location manually from dropdowns.');
+      logger.info('Reverse geocoding unavailable (CORS restriction)');
     } else {
-      console.error('Reverse geocoding failed:', error);
+      logger.error('Reverse geocoding failed', error as Error);
     }
     return { address: null, city: null, district: null };
   }

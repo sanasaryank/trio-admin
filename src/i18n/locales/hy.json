@@ -43,7 +43,21 @@
     "yes": "Այո",
     "no": "Ոչ",
     "confirm": "Հաստատել",
-    "required": "Պարտադիր"
+    "required": "Պարտադիր",
+    "retry": "Կրկին փորձել",
+    "reload": "Վերաբեռնել"
+  },
+  "error": {
+    "somethingWentWrong": "Ինչ-որ բան սխալ է եղել",
+    "pleaseRefresh": "Խնդրում ենք թարմացնել էջը կամ փորձել ավելի ուշ։",
+    "restaurantsLoadFailed": "Չհաջողվեց բեռնել ռեստորանները",
+    "restaurantsLoadFailedMessage": "Սխալ է տեղի ունեցել ռեստորանները բեռնելիս։ Խնդրում ենք կրկին փորձել։",
+    "employeesLoadFailed": "Չհաջողվեց բեռնել աշխատակիցներին",
+    "employeesLoadFailedMessage": "Սխալ է տեղի ունեցել աշխատակիցներին բեռնելիս։ Խնդրում ենք կրկին փորձել։",
+    "dictionariesLoadFailed": "Չհաջողվեց բեռնել բառարանները",
+    "dictionariesLoadFailedMessage": "Սխալ է տեղի ունեցել բառարանները բեռնելիս։ Խնդրում ենք կրկին փորձել։",
+    "statisticsLoadFailed": "Չհաջողվեց բեռնել վիճակագրությունը",
+    "statisticsLoadFailedMessage": "Սխալ է տեղի ունեցել վիճակագրությունը բեռնելիս։ Խնդրում ենք կրկին փորձել։"
   },
   "auth": {
     "login": "Մուտք",

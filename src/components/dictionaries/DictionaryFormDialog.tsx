@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { dictionariesApi } from '../../api/endpoints';
+import { logger } from '../../utils/logger';
 import { getDictionaryFieldsConfig } from '../../utils/dictionaryUtils';
 import type { DictionaryKey, DictionaryFormData, Country, City, District } from '../../types';
 
@@ -119,7 +120,7 @@ export const DictionaryFormDialog = ({
       try {
         return ((await dictionariesApi.list('countries')) as Country[]).filter((c) => !c.isBlocked);
       } catch (error) {
-        console.error('Error loading countries:', error);
+        logger.error('Error loading countries', error as Error, { context: 'DictionaryFormDialog' });
         return [];
       }
     },
@@ -133,7 +134,7 @@ export const DictionaryFormDialog = ({
       try {
         return ((await dictionariesApi.list('cities')) as City[]).filter((c) => !c.isBlocked);
       } catch (error) {
-        console.error('Error loading cities:', error);
+        logger.error('Error loading cities', error as Error, { context: 'DictionaryFormDialog' });
         return [];
       }
     },

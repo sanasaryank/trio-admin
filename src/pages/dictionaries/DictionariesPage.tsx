@@ -79,7 +79,7 @@ export const DictionariesPage = () => {
       try {
         return (await dictionariesApi.list('countries')) as Country[];
       } catch (error) {
-        console.error('Error loading countries:', error);
+        logger.error('Error loading countries', error as Error, { context: 'DictionariesPage' });
         return [];
       }
     },
@@ -93,7 +93,7 @@ export const DictionariesPage = () => {
       try {
         return (await dictionariesApi.list('cities')) as City[];
       } catch (error) {
-        console.error('Error loading cities:', error);
+        logger.error('Error loading cities', error as Error, { context: 'DictionariesPage' });
         return [];
       }
     },

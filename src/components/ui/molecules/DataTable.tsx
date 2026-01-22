@@ -12,6 +12,7 @@ import {
   Box,
   Typography,
 } from '@mui/material';
+import { logger } from '../../../utils/logger';
 
 /**
  * Error boundary for table cells
@@ -30,7 +31,9 @@ class CellErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Cell rendering error:', error, errorInfo);
+    logger.error('Cell rendering error', error, {
+      componentStack: errorInfo.componentStack,
+    });
   }
 
   render(): ReactNode {
@@ -164,7 +167,10 @@ function DataTable<T extends Record<string, any>>({
           // React elements have $$typeof symbol
           const isReactElement = result && typeof result === 'object' && '$$typeof' in result;
           if (!isReactElement) {
-            console.error('Column render returned non-React object:', result);
+            logger.error('Column render returned non-React object', new Error('Invalid render result'), {
+              columnId: column.id,
+              result: JSON.stringify(result),
+            });
             return <span>{String(JSON.stringify(result))}</span>;
           }
         }
@@ -176,7 +182,9 @@ function DataTable<T extends Record<string, any>>({
       if (typeof value === 'object') return <span>{String(JSON.stringify(value))}</span>;
       return <span>{String(value)}</span>;
     } catch (error) {
-      console.error('Error rendering cell:', error, { column: column.id, row });
+      logger.error('Error rendering cell', error as Error, {
+        columnId: column.id,
+      });
       return <span>-</span>;
     }
   };

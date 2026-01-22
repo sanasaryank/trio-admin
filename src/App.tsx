@@ -6,6 +6,12 @@ import { theme } from './theme';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { MainLayout } from './layouts/MainLayout';
+import {
+  RestaurantsErrorFallback,
+  EmployeesErrorFallback,
+  DictionariesErrorFallback,
+  StatisticsErrorFallback,
+} from './components/common/ErrorFallback';
 import './i18n/config';
 
 // Lazy load pages for code splitting
@@ -63,21 +69,84 @@ function App() {
                   <Route index element={<Navigate to="/restaurants" replace />} />
                   
                   {/* Restaurants */}
-                  <Route path="restaurants" element={<RestaurantsListPage />} />
-                  <Route path="restaurants/new" element={<RestaurantFormPage />} />
-                  <Route path="restaurants/:id/edit" element={<RestaurantFormPage />} />
-                  <Route path="restaurants/:id/qr" element={<RestaurantQRPage />} />
+                  <Route
+                    path="restaurants"
+                    element={
+                      <ErrorBoundary fallback={<RestaurantsErrorFallback />}>
+                        <RestaurantsListPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="restaurants/new"
+                    element={
+                      <ErrorBoundary fallback={<RestaurantsErrorFallback />}>
+                        <RestaurantFormPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="restaurants/:id/edit"
+                    element={
+                      <ErrorBoundary fallback={<RestaurantsErrorFallback />}>
+                        <RestaurantFormPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="restaurants/:id/qr"
+                    element={
+                      <ErrorBoundary fallback={<RestaurantsErrorFallback />}>
+                        <RestaurantQRPage />
+                      </ErrorBoundary>
+                    }
+                  />
 
                   {/* Employees */}
-                  <Route path="employees" element={<EmployeesListPage />} />
-                  <Route path="employees/new" element={<EmployeeFormPage />} />
-                  <Route path="employees/:id/edit" element={<EmployeeFormPage />} />
+                  <Route
+                    path="employees"
+                    element={
+                      <ErrorBoundary fallback={<EmployeesErrorFallback />}>
+                        <EmployeesListPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="employees/new"
+                    element={
+                      <ErrorBoundary fallback={<EmployeesErrorFallback />}>
+                        <EmployeeFormPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="employees/:id/edit"
+                    element={
+                      <ErrorBoundary fallback={<EmployeesErrorFallback />}>
+                        <EmployeeFormPage />
+                      </ErrorBoundary>
+                    }
+                  />
 
                   {/* Dictionaries */}
-                  <Route path="dictionaries/:dictKey" element={<DictionariesPage />} />
+                  <Route
+                    path="dictionaries/:dictKey"
+                    element={
+                      <ErrorBoundary fallback={<DictionariesErrorFallback />}>
+                        <DictionariesPage />
+                      </ErrorBoundary>
+                    }
+                  />
 
                   {/* Statistics */}
-                  <Route path="statistics/:section" element={<StatisticsPage />} />
+                  <Route
+                    path="statistics/:section"
+                    element={
+                      <ErrorBoundary fallback={<StatisticsErrorFallback />}>
+                        <StatisticsPage />
+                      </ErrorBoundary>
+                    }
+                  />
                 </Route>
               </Routes>
             </Suspense>

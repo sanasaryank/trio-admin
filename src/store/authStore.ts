@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authApi } from '../api';
+import { logger } from '../utils/logger';
 import type { User, LoginRequest } from '../types';
 
 interface AuthState {
@@ -20,7 +21,7 @@ const getInitialSession = (): User | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error('Failed to parse session:', error);
+    logger.error('Failed to parse session', error as Error);
   }
   return null;
 };
