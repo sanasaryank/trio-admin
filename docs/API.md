@@ -913,45 +913,319 @@ Cookie: admin_token=...
 
 ### Error Response Format
 
+All error responses follow a consistent format:
+
 ```json
 {
-  "error": {
-    "message": "Human-readable error message",
-    "code": "ERROR_CODE",
-    "field": "fieldName",
-    "details": { ... }
+  "code": 0,
+  "message": "Error description"
+}
+```
+
+**Fields:**
+- `code`: Application-specific error code (usually 0 for most responses)
+- `message`: Human-readable error message. If empty, a default error description based on the HTTP status code is shown
+
+### HTTP Status Codes
+
+The API uses the following HTTP status codes:
+
+| Status Code | Name | Description | When Used |
+|-------------|------|-------------|-----------|
+| **2xx - Success** |
+| `200 OK` | Success | Request successful | Most GET requests |
+| `201 Created` | Created | Resource created | POST requests |
+| `204 No Content` | No Content | Success, no response body | Logout, DELETE |
+| **4xx - Client Errors** |
+| `400` | Bad Request | Invalid request format or parameters | Malformed requests |
+| `401` | Unauthorized | Authentication required or failed | Missing/invalid credentials |
+| `403` | Forbidden | Insufficient permissions | Access denied |
+| `405` | Method Not Allowed | HTTP method not supported | Wrong method used |
+| `413` | Content Too Large | Request body too large | Payload exceeds limit |
+| **4xx - Application Errors** |
+| `455` | Application Error | General application error | Application-level errors |
+| `456` | Restaurant Not Found | Restaurant not found | Restaurant ID invalid/deleted |
+| `457` | Object Not Unique | Duplicate entry | Unique constraint violation |
+| `458` | Object Not Found | Object was deleted | Object removed during operation |
+| `460` | Object Changed | Concurrent modification | Hash/version mismatch on PUT |
+| `461` | Server Data Error | Data consistency error | Server data corruption |
+| **5xx - Server Errors** |
+| `500` | Internal Server Error | Unexpected server error | Server-side exception |
+| `502` | Bad Gateway | Gateway/proxy error | Upstream server error |
+| `503` | Service Unavailable | Service temporarily down | Maintenance/overload |
+
+### Special Status Codes Explained
+
+#### 456 - Restaurant Not Found
+Returned for requests with a restaurant ID when the restaurant doesn't exist on the server.
+
+**Example:**
+```http
+GET /admin/restaurants/invalid-id HTTP/1.1
+
+HTTP/1.1 456 Restaurant Not Found
+{
+  "code": 0,
+  "message": "Restaurant not found"
+}
+```
+
+#### 457 - Object Not Unique
+Returned on POST or PUT requests when a unique field constraint is violated (e.g., duplicate name).
+
+**Example:**
+```http
+POST /admin/restaurants HTTP/1.1
+{
+  "name": "Existing Restaurant",
+  ...
+}
+
+HTTP/1.1 457 Object Not Unique
+{
+  "code": 0,
+  "message": "Restaurant with this name already exists"
+}
+```
+
+#### 458 - Object Not Found
+Returned when an object was deleted during an operation (between read and update).
+
+**Example:**
+```http
+PUT /admin/employees/emp123 HTTP/1.1
+{...}
+
+HTTP/1.1 458 Object Not Found
+{
+  "code": 0,
+  "message": "Employee was deleted"
+}
+```
+
+#### 460 - Object Changed
+Returned on PUT requests when the object's hash/version changed during the operation (optimistic locking).
+
+**Example:**
+```http
+PUT /admin/restaurants/rest123 HTTP/1.1
+{
+  "hash": "old-hash-value",
+  ...
+}
+
+HTTP/1.1 460 Object Changed
+{
+  "code": 0,
+  "message": "Restaurant was modified by another user. Please refresh and try again"
+}
+```
+
+### Error Handling Best Practices
+
+1. **Check HTTP Status Code First**: Always check the HTTP status code to determine the error category
+2. **Parse Error Response**: Extract `code` and `message` from the response body
+3. **Display User-Friendly Messages**: Show the `message` field to users; if empty, show the default error description for that status code
+4. **Use TypeScript Type Guards**: Use `isApiError()` to safely access ApiError properties
+5. **Handle Specific Errors**:
+   - `401`: Automatically redirects to login (handled by client)
+   - `456`: Show "Restaurant not found" error
+   - `457`: Show validation error for duplicate entries
+   - `458`: Show "Item was deleted" and refresh list
+   - `460`: Show "Item was changed" and prompt to refresh
+   - `5xx`: Implement retry logic with exponential backoff
+6. **Retry Logic**: Use `error.isRetryable()` to check if error can be retried
+7. **Logging**: Log all errors with full context for debugging
+8. **Network Errors**: Handle network failures gracefully
+
+### Implementation Notes
+
+The application uses a centralized error handling system:
+- **Error Module**: `src/api/errors.ts` - Contains `ApiError` class and utilities
+- **Client Module**: `src/api/real/client.ts` - Automatically parses errors and throws `ApiError`
+- **Exports**: Available via `import { ApiError, isApiError, getErrorMessage } from '@/api'`
+
+**Key Features:**
+- Automatic 401 handling with redirect to login
+- Type-safe error checking with TypeScript
+- Convenience methods for common error scenarios
+- Automatic fallback to status-specific descriptions when message is empty
+- Proper stack traces for debugging
+
+### Example Error Handling
+
+#### Using the ApiError Class (Recommended)
+
+The application provides a typed `ApiError` class for better error handling:
+
+```typescript
+import { isApiError, getErrorMessage } from '@/api';
+
+// Basic error handling
+try {
+  await restaurantsApi.create(data);
+} catch (error) {
+  alert(getErrorMessage(error)); // Works with any error type
+}
+
+// Type-safe error handling
+try {
+  await restaurantsApi.update(id, data);
+} catch (error) {
+  if (isApiError(error)) {
+    // Now TypeScript knows it's an ApiError
+    console.log(error.statusCode);
+    console.log(error.getUserMessage());
+  }
+}
+
+// Specific error detection
+try {
+  await restaurantsApi.create(data);
+} catch (error) {
+  if (isApiError(error)) {
+    if (error.isObjectNotUnique()) {
+      setFieldError('name', 'This name is already taken');
+    } else if (error.isObjectChanged()) {
+      showRefreshDialog();
+    } else if (error.isRetryable()) {
+      retryWithBackoff();
+    } else {
+      showError(error.getUserMessage());
+    }
   }
 }
 ```
 
-### Common Error Codes
+#### ApiError Methods
 
-| Code | Description |
-|------|-------------|
-| `UNAUTHORIZED` | Not authenticated |
-| `FORBIDDEN` | Not authorized |
-| `NOT_FOUND` | Resource not found |
-| `VALIDATION_ERROR` | Input validation failed |
-| `DUPLICATE_ERROR` | Duplicate resource |
-| `CONFLICT` | Concurrent modification |
-| `RATE_LIMIT` | Too many requests |
-| `INTERNAL_ERROR` | Server error |
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `getUserMessage()` | string | User-friendly error message |
+| `isRestaurantNotFound()` | boolean | Restaurant not found (456) |
+| `isObjectNotUnique()` | boolean | Duplicate entry (457) |
+| `isObjectNotFound()` | boolean | Object deleted (458) |
+| `isObjectChanged()` | boolean | Optimistic lock (460) |
+| `isUnauthorized()` | boolean | Not authenticated (401) |
+| `isServerError()` | boolean | 5xx error |
+| `isRetryable()` | boolean | Can retry (500, 502, 503) |
 
-### HTTP Status Codes
+#### Common Patterns
 
-| Status | Meaning |
-|--------|---------|
-| `200 OK` | Successful request |
-| `201 Created` | Resource created |
-| `204 No Content` | Successful, no response body |
-| `400 Bad Request` | Invalid request |
-| `401 Unauthorized` | Authentication required |
-| `403 Forbidden` | Insufficient permissions |
-| `404 Not Found` | Resource not found |
-| `409 Conflict` | Conflict with current state |
-| `429 Too Many Requests` | Rate limit exceeded |
-| `500 Internal Server Error` | Server error |
-| `503 Service Unavailable` | Service temporarily unavailable |
+**Form Submission:**
+```typescript
+const handleSubmit = async (data: FormData) => {
+  try {
+    await restaurantsApi.create(data);
+    showSuccess('Created successfully');
+    navigate('/list');
+  } catch (error) {
+    if (isApiError(error) && error.isObjectNotUnique()) {
+      setError('name', { message: 'Name already exists' });
+    } else {
+      showError(getErrorMessage(error));
+    }
+  }
+};
+```
+
+**Optimistic Lock Handling:**
+```typescript
+const handleUpdate = async (id: string, data: FormData) => {
+  try {
+    await restaurantsApi.update(id, data);
+    showSuccess('Updated successfully');
+  } catch (error) {
+    if (isApiError(error) && error.isObjectChanged()) {
+      const shouldRetry = await showConfirmDialog(
+        'This item was modified by another user. Refresh and try again?'
+      );
+      if (shouldRetry) {
+        refreshData();
+      }
+    } else {
+      showError(getErrorMessage(error));
+    }
+  }
+};
+```
+
+**Retry Logic:**
+```typescript
+const fetchWithRetry = async (maxAttempts = 3) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await restaurantsApi.list();
+    } catch (error) {
+      if (isApiError(error) && error.isRetryable() && attempt < maxAttempts) {
+        await sleep(Math.pow(2, attempt) * 1000); // Exponential backoff
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+```
+
+#### Raw Fetch Example (Legacy)
+
+```typescript
+try {
+  const response = await fetch('/admin/restaurants', {...});
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    const message = errorData.message || 'Unhandled error from server';
+    
+    switch (response.status) {
+      case 401:
+        window.location.href = '/login';
+        break;
+      case 456:
+        alert('Restaurant not found');
+        break;
+      case 457:
+        alert('Duplicate entry: ' + message);
+        break;
+      case 458:
+        alert('Item was deleted. Refreshing...');
+        refreshList();
+        break;
+      case 460:
+        alert('Item was modified. Please refresh and try again.');
+        break;
+      case 500:
+      case 502:
+      case 503:
+        retryRequest();
+        break;
+      default:
+        alert(message);
+    }
+  }
+} catch (error) {
+  alert('Network error. Please check your connection.');
+}
+```
+
+### Common Error Codes (Legacy)
+
+**Note:** The `code` field in the response body is typically `0`. The HTTP status code is the primary indicator of the error type.
+
+| HTTP Status | Error Type |
+|-------------|------------|
+| `400` | Bad Request |
+| `401` | Unauthorized |
+| `403` | Forbidden |
+| `455` | Application Error |
+| `456` | Restaurant Not Found |
+| `457` | Object Not Unique |
+| `458` | Object Not Found |
+| `460` | Object Changed |
+| `461` | Server Data Error |
+| `500` | Internal Server Error |
+| `502` | Bad Gateway |
+| `503` | Service Unavailable |
 
 ---
 
@@ -978,11 +1252,8 @@ HTTP/1.1 429 Too Many Requests
 Retry-After: 30
 
 {
-  "error": {
-    "message": "Rate limit exceeded",
-    "code": "RATE_LIMIT",
-    "retryAfter": 30
-  }
+  "code": 0,
+  "message": "Rate limit exceeded"
 }
 ```
 
@@ -1016,11 +1287,22 @@ GET /admin/audit?limit=50&offset=100  # Third page
 
 ### Error Handling
 
-- Always check status codes
+- Always check HTTP status codes (primary error indicator)
+- Parse the response body for `code` and `message` fields
+- Display user-friendly error messages from `message` field
+- If `message` is empty, default descriptions are shown based on status code
+- Use `isApiError()` type guard for type-safe error handling
+- Use `getErrorMessage()` for consistent message extraction
+- Handle specific error codes appropriately:
+  - `401`: Automatically redirects to login page
+  - `456`: Restaurant not found error
+  - `457`: Duplicate/uniqueness validation error
+  - `458`: Refresh list as object was deleted
+  - `460`: Prompt user to refresh and retry (optimistic lock conflict)
+  - Use `error.isRetryable()` for 5xx errors
+- Take advantage of `ApiError` convenience methods (isObjectNotUnique, isObjectChanged, etc.)
+- Log all errors with full context for debugging
 - Handle network errors gracefully
-- Display user-friendly error messages
-- Log errors for debugging
-- Implement retry logic for transient errors
 
 ---
 
