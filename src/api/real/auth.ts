@@ -1,5 +1,6 @@
 import type { LoginRequest, LoginResponse, User } from '../../types';
 import { realApiFetch } from './client';
+import { parseApiError } from '../errors';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
 
@@ -11,6 +12,7 @@ export const realAuthApi = {
     const basicAuth = btoa(`${credentials.username}:${credentials.password}`);
     
     // Server will set HttpOnly cookie named "admin_token"
+    // Note: We don't use realApiFetch here to avoid 401 redirect during login
     const response = await fetch(`${AUTH_BASE_URL}/login`, {
       method: 'POST',
       headers: {
@@ -21,7 +23,8 @@ export const realAuthApi = {
     });
 
     if (!response.ok) {
-      throw new Error('Invalid credentials');
+      const apiError = await parseApiError(response);
+      throw apiError;
     }
 
     const data: LoginResponse = await response.json();
@@ -31,20 +34,12 @@ export const realAuthApi = {
 
   me: async (): Promise<User> => {
     // Fetch current user from backend using cookie authentication
-    try {
-      const response = await realApiFetch(`${AUTH_BASE_URL}/me`, {
-        method: 'GET',
-      });
+    const response = await realApiFetch(`${AUTH_BASE_URL}/me`, {
+      method: 'GET',
+    });
 
-      if (response.ok) {
-        const data: User = await response.json();
-        return data;
-      }
-    } catch (error) {
-      logger.warn('Failed to fetch user info', error as Error);
-    }
-
-    throw new Error('Not authenticated');
+    const data: User = await response.json();
+    return data;
   },
 
   logout: async (): Promise<void> => {

@@ -10,10 +10,6 @@ export const realDictionariesApi = {
       method: 'GET',
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${dictKey}: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -21,10 +17,6 @@ export const realDictionariesApi = {
     const response = await realApiFetch(`${DICTIONARIES_BASE_URL}/${dictKey}/${id}`, {
       method: 'GET',
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${dictKey} item: ${response.status}`);
-    }
 
     return response.json();
   },
@@ -34,10 +26,6 @@ export const realDictionariesApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create ${dictKey} item: ${response.status}`);
-    }
 
     return response.json();
   },
@@ -52,10 +40,6 @@ export const realDictionariesApi = {
       body: JSON.stringify(data),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to update ${dictKey} item: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -64,10 +48,6 @@ export const realDictionariesApi = {
       method: 'PATCH',
       body: JSON.stringify({ isBlocked }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to block/unblock ${dictKey} item: ${response.status}`);
-    }
 
     return response.json();
   },

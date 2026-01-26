@@ -10,10 +10,6 @@ export const realEmployeesApi = {
       method: 'GET',
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch employees: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -21,10 +17,6 @@ export const realEmployeesApi = {
     const response = await realApiFetch(`${EMPLOYEES_BASE_URL}/${id}`, {
       method: 'GET',
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch employee: ${response.status}`);
-    }
 
     return response.json();
   },
@@ -35,10 +27,6 @@ export const realEmployeesApi = {
       body: JSON.stringify(data),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to create employee: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -48,10 +36,6 @@ export const realEmployeesApi = {
       body: JSON.stringify(data),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to update employee: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -60,10 +44,6 @@ export const realEmployeesApi = {
       method: 'PATCH',
       body: JSON.stringify({ isBlocked }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to block/unblock employee: ${response.status}`);
-    }
 
     return response.json();
   },

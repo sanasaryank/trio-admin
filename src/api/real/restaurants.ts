@@ -11,10 +11,6 @@ export const realRestaurantsApi = {
       method: 'GET',
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch restaurants: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -22,10 +18,6 @@ export const realRestaurantsApi = {
     const response = await realApiFetch(`${RESTAURANTS_BASE_URL}/${id}`, {
       method: 'GET',
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch restaurant: ${response.status}`);
-    }
 
     return response.json();
   },
@@ -36,10 +28,6 @@ export const realRestaurantsApi = {
       body: JSON.stringify(data),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to create restaurant: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -48,10 +36,6 @@ export const realRestaurantsApi = {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to update restaurant: ${response.status}`);
-    }
 
     return response.json();
   },
@@ -62,10 +46,6 @@ export const realRestaurantsApi = {
       body: JSON.stringify({ isBlocked }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to block/unblock restaurant: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -73,10 +53,6 @@ export const realRestaurantsApi = {
     const response = await realApiFetch(`${RESTAURANTS_BASE_URL}/${restaurantId}/qr`, {
       method: 'GET',
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch QR codes: ${response.status}`);
-    }
 
     return response.json();
   },
@@ -87,10 +63,6 @@ export const realRestaurantsApi = {
       body: JSON.stringify({ isBlocked }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to block/unblock QR code: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -99,10 +71,6 @@ export const realRestaurantsApi = {
       method: 'POST',
       body: JSON.stringify(request),
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create QR batch: ${response.status}`);
-    }
 
     return response.json();
   },
@@ -113,10 +81,6 @@ export const realRestaurantsApi = {
       body: JSON.stringify({ type }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to update QR type: ${response.status}`);
-    }
-
     return response.json();
   },
 
@@ -124,10 +88,6 @@ export const realRestaurantsApi = {
     const response = await realApiFetch(LOCATIONS_BASE_URL, {
       method: 'GET',
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch locations: ${response.status}`);
-    }
 
     return response.json();
   },

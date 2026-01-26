@@ -2,6 +2,8 @@
  * Real API Client with authentication and error handling
  */
 
+import { parseApiError, ApiError } from '../errors';
+
 const getAuthHeaders = (): HeadersInit => {
   return {
     'Content-Type': 'application/json',
@@ -26,10 +28,16 @@ export const realApiFetch = async (
     },
   });
 
-  // Handle 401 Unauthorized
+  // Handle 401 Unauthorized - redirect to login
   if (response.status === 401) {
     handleUnauthorized();
-    throw new Error('Unauthorized');
+    throw new ApiError(401, 0, 'Unauthorized');
+  }
+
+  // Handle other error status codes
+  if (!response.ok) {
+    const apiError = await parseApiError(response);
+    throw apiError;
   }
 
   return response;
