@@ -1,16 +1,16 @@
-import { realAuthApi } from '../real';
+import { mockAuthApi } from '../mock';
 import type { LoginRequest, LoginResponse, User } from '../../types';
 
 export const authApi = {
   login: (credentials: LoginRequest): Promise<LoginResponse> => {
-    return realAuthApi.login(credentials);
+    return mockAuthApi.login(credentials);
   },
 
   me: (): Promise<User> => {
-    return realAuthApi.me();
+    return mockAuthApi.me();
   },
 
   logout: (): Promise<void> => {
-    return realAuthApi.logout();
+    return mockAuthApi.logout();
   },
 };

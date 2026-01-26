@@ -12,9 +12,24 @@ interface AuthState {
   checkAuth: () => Promise<void>;
 }
 
+// Check if there's a session in localStorage on initialization
+const getInitialSession = (): User | null => {
+  try {
+    const stored = localStorage.getItem('trio_admin_session');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Failed to parse session:', error);
+  }
+  return null;
+};
+
+const initialUser = getInitialSession();
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
+  user: initialUser,
+  isAuthenticated: !!initialUser,
   isLoading: false,
   error: null,
 
@@ -22,12 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authApi.login(credentials);
-      const user: User = {
-        username: response.username,
-        firstName: response.firstName,
-        lastName: response.lastName,
-      };
-      set({ user, isAuthenticated: true, isLoading: false });
+      set({ user: response.user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Login failed',

@@ -7,7 +7,7 @@ import { useState } from 'react';
 const languages = [
   { code: 'hy', name: 'Հայերեն', flag: '🇦🇲' },
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'en', name: 'English', flag: '🇬🇧' },
 ];
 
 export const LanguageSwitcher = () => {

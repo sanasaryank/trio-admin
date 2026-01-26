@@ -47,39 +47,7 @@ function useFetch<T>(
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const executeFetch = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await fetchFn();
-        
-        if (!cancelled) {
-          setData(result);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err : new Error('An error occurred'));
-          setData(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    executeFetch();
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-
-  const refetch = useCallback(async () => {
+  const executeFetch = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -93,11 +61,16 @@ function useFetch<T>(
     }
   }, [fetchFn]);
 
+  useEffect(() => {
+    executeFetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
   return {
     data,
     loading,
     error,
-    refetch,
+    refetch: executeFetch,
   };
 }
 

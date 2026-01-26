@@ -3,7 +3,6 @@
     "add": "Ավելացնել",
     "edit": "Խմբագրել",
     "delete": "Ջնջել",
-    "create": "Ստեղծել",
     "save": "Պահպանել",
     "cancel": "Չեղարկել",
     "back": "Վերադառնալ",
@@ -43,21 +42,7 @@
     "yes": "Այո",
     "no": "Ոչ",
     "confirm": "Հաստատել",
-    "required": "Պարտադիր",
-    "retry": "Կրկին փորձել",
-    "reload": "Վերաբեռնել"
-  },
-  "error": {
-    "somethingWentWrong": "Ինչ-որ բան սխալ է եղել",
-    "pleaseRefresh": "Խնդրում ենք թարմացնել էջը կամ փորձել ավելի ուշ։",
-    "restaurantsLoadFailed": "Չհաջողվեց բեռնել ռեստորանները",
-    "restaurantsLoadFailedMessage": "Սխալ է տեղի ունեցել ռեստորանները բեռնելիս։ Խնդրում ենք կրկին փորձել։",
-    "employeesLoadFailed": "Չհաջողվեց բեռնել աշխատակիցներին",
-    "employeesLoadFailedMessage": "Սխալ է տեղի ունեցել աշխատակիցներին բեռնելիս։ Խնդրում ենք կրկին փորձել։",
-    "dictionariesLoadFailed": "Չհաջողվեց բեռնել բառարանները",
-    "dictionariesLoadFailedMessage": "Սխալ է տեղի ունեցել բառարանները բեռնելիս։ Խնդրում ենք կրկին փորձել։",
-    "statisticsLoadFailed": "Չհաջողվեց բեռնել վիճակագրությունը",
-    "statisticsLoadFailedMessage": "Սխալ է տեղի ունեցել վիճակագրությունը բեռնելիս։ Խնդրում ենք կրկին փորձել։"
+    "required": "Պարտադիր"
   },
   "auth": {
     "login": "Մուտք",
@@ -107,11 +92,6 @@
     "menuType": "Ճաշացանկի տեսակ",
     "integrationType": "Ինտեգրման տեսակ",
     "adminEmail": "Ադմինիստրատորի էլ. հասցե",
-    "adminUsername": "Ադմինիստրատորի օգտանուն",
-    "adminPassword": "Ադմինիստրատորի գաղտնաբառ",
-    "changeAdminPassword": "Փոխել ադմինիստրատորի գաղտնաբառը",
-    "legalAddress": "Իրավական հասցե",
-    "tin": "ՀՀՀ",
     "connectionData": "Միացման տվյալներ",
     "host": "Հոսթ",
     "port": "Պորտ",
@@ -129,7 +109,8 @@
     "lastClientActivity": "Վերջին հաճախորդի գործողություն",
     "lastRestaurantActivity": "Վերջին ռեստորանի գործողություն",
     "statistics": "Վիճակագրություն",
-    "configurationErrors": "Կազմաձևման սխալներ",    "qrCode": "QR կոդ",    "qrCodes": "QR կոդեր",
+    "configurationErrors": "Կազմաձևման սխալներ",
+    "qrCodes": "QR կոդեր",
     "qrCodesTitle": "QR Կոդեր - {{name}}",
     "addQRCodes": "Ավելացնել QR կոդեր",
     "createQRCodes": "Ստեղծել QR կոդեր",
@@ -140,13 +121,7 @@
     "unblockQRTitle": "Ապաարգելափակել QR կոդը?",
     "blockQRMessage": "Համոզվա՞ծ եք, որ ցանկանում եք արգելափակել {{qrText}} QR կոդը?",
     "unblockQRMessage": "Համոզվա՞ծ եք, որ ցանկանում եք ապաարգելափակել {{qrText}} QR կոդը?",
-    "changeQRTypeTitle": "Փոխել QR տեսակը?",
-    "changeQRTypeMessage": "Համոզվա՞ծ եք, որ ցանկանում եք փոխել {{qrText}} QR կոդը {{type}}-ի?",
-    "type": "Տեսակ",
-    "static": "Ստատիկ",
-    "dynamic": "Դինամիկ",    "assigned": "Նշանակված",    "assignedFilter": "Նշանակված",
-    "unassignedFilter": "Չնշանակված",
-    "searchPlaceholder": "Որոնել ըստ ID կամ անվան...",
+    "searchPlaceholder": "Որոնել ըստ ID-ի կամ անվան...",
     "blockConfirmTitle": "Արգելափակել ռեստորանը?",
     "unblockConfirmTitle": "Ապաարգելափակել ռեստորանը?",
     "blockConfirmMessage": "Վստա՞հ եք, որ ցանկանում եք արգելափակել {{name}} ռեստորանը:",
@@ -210,8 +185,7 @@
     "passwordRequired": "Գաղտնաբառը պարտադիր է",
     "quantityRequired": "Քանակը պարտադիր է",
     "quantityMin": "Նվազագույնը 1",
-    "quantityMax": "Առավելագույնը 100",    "typeRequired": "Տեսակը պարտադիր է",    "legalAddressRequired": "Իրավական հասցեն պարտադիր է",
-    "tinRequired": "ՀՀՀ-ն պարտադիր է"
+    "quantityMax": "Առավելագույնը 100"
   },
   "pagination": {
     "rowsPerPage": "Տողեր էջում:",
@@ -244,10 +218,6 @@
   "dictionaries": {
     "addEntry": "Ավելացնել գրառում",
     "name": "Անվանում",
-    "nameArmenian": "Անվանում (Հայերեն)",
-    "nameRussian": "Անվանում (Ռուսերեն)",
-    "nameEnglish": "Անվանում (Անգլերեն)",
-    "description": "Նկարագրություն",
     "country": "Երկիր",
     "city": "Քաղաք",
     "rotation": "Ռոտացիա (վայրկյաններ)",
@@ -259,8 +229,7 @@
     "blockConfirmTitle": "Արգելափակել գրառումը?",
     "unblockConfirmTitle": "Ապաարգելափակել գրառումը?",
     "blockConfirmMessage": "Վստա՞հ եք, որ ցանկանում եք արգելափակել \"{{name}}\" գրառումը:",
-    "unblockConfirmMessage": "Վստա՞հ եք, որ ցանկանում եք ապաարգելափակել \"{{name}}\" գրառումը:"
-  },
+    "unblockConfirmMessage": "Վստա՞հ եք, որ ցանկանում եք ապաարգելափակել \"{{name}}\" գրառումը:"  },
   "advertisers": {
     "title": "Գովազդատուներ",
     "add": "Ավելացնել գովազդատու",

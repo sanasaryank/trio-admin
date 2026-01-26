@@ -9,14 +9,11 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
-  const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
+  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    // Only check auth if we're not already authenticated
-    if (!isAuthenticated && !user) {
-      checkAuth();
-    }
-  }, [isAuthenticated, user, checkAuth]);
+    checkAuth();
+  }, [checkAuth]);
 
   if (isLoading) {
     return (
