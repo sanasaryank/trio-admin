@@ -834,39 +834,76 @@ Note: Password is optional in responses for security reasons.
 
 ## Error Responses
 
+**⚠️ Note:** This section describes the legacy error format. For the updated error handling with specific HTTP status codes (456, 457, 458, 460, 461, etc.), see [docs/API.md](./docs/API.md).
+
 All endpoints may return error responses in the following format:
+
+```json
+{
+  "code": 0,
+  "message": "Error description"
+}
+```
+
+### Common HTTP Status Codes
 
 **400 Bad Request:**
 ```json
 {
-  "message": "Invalid input data",
-  "code": "INVALID_INPUT"
+  "code": 0,
+  "message": "Invalid input data"
 }
 ```
 
 **401 Unauthorized:**
 ```json
 {
-  "message": "Not authenticated",
-  "code": "UNAUTHORIZED"
+  "code": 0,
+  "message": "Not authenticated"
 }
 ```
 
-**404 Not Found:**
+**456 Restaurant Not Found:**
 ```json
 {
-  "message": "Resource not found",
-  "code": "NOT_FOUND"
+  "code": 0,
+  "message": "Restaurant not found"
+}
+```
+
+**457 Object Not Unique:**
+```json
+{
+  "code": 0,
+  "message": "Restaurant with this name already exists"
+}
+```
+
+**458 Object Not Found:**
+```json
+{
+  "code": 0,
+  "message": "Object was deleted"
+}
+```
+
+**460 Object Changed:**
+```json
+{
+  "code": 0,
+  "message": "Object was modified by another user"
 }
 ```
 
 **500 Internal Server Error:**
 ```json
 {
-  "message": "Internal server error",
-  "code": "INTERNAL_ERROR"
+  "code": 0,
+  "message": "Internal server error"
 }
 ```
+
+For complete error handling documentation including all status codes (455, 461, 502, 503) and best practices, see [docs/API.md](./docs/API.md#error-handling).
 
 ---
 
