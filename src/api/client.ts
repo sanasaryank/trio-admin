@@ -33,8 +33,8 @@ export const createApiUrl = (endpoint: string): string => {
  * Get authorization header
  */
 export const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem('authToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
+  // With cookie-based auth, no Authorization header needed
+  return {};
 };
 
 /**
@@ -46,6 +46,7 @@ export const createFetchOptions = (
 ): RequestInit => {
   const options: RequestInit = {
     method,
+    credentials: 'include', // Include cookies for authentication
     headers: {
       ...apiConfig.headers,
       ...getAuthHeader(),
@@ -58,6 +59,33 @@ export const createFetchOptions = (
   }
 
   return options;
+};
+
+/**
+ * Sleep function for retry delays
+ */
+const sleep = (ms: number): Promise<void> => 
+  new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Check if error is retryable (network errors, 5xx, timeout)
+ */
+const isRetryableError = (error: unknown): boolean => {
+  if (error instanceof TypeError) {
+    // Network errors (fetch failures)
+    return true;
+  }
+  if (error instanceof Error) {
+    // Timeout errors
+    if (error.name === 'AbortError' || error.message.includes('timeout')) {
+      return true;
+    }
+    // 5xx server errors
+    if (error.message.match(/API Error: 5\d\d/)) {
+      return true;
+    }
+  }
+  return false;
 };
 
 /**
@@ -101,14 +129,52 @@ export const apiRequest = async <T>(
 };
 
 /**
+ * API request with retry logic
+ */
+export const apiRequestWithRetry = async <T>(
+  endpoint: string,
+  method: string,
+  body?: unknown,
+  maxRetries: number = 3,
+): Promise<T> => {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await apiRequest<T>(endpoint, method, body);
+    } catch (error) {
+      lastError = error;
+
+      // Don't retry on last attempt or non-retryable errors
+      if (attempt === maxRetries - 1 || !isRetryableError(error)) {
+        throw error;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, attempt) * 1000;
+      logger.warn(`Retrying request (${attempt + 1}/${maxRetries})`, {
+        endpoint,
+        method,
+        delay,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+};
+
+/**
  * HTTP Methods
  */
 export const api = {
-  get: <T>(endpoint: string) => apiRequest<T>(endpoint, 'GET'),
-  post: <T>(endpoint: string, body: unknown) => apiRequest<T>(endpoint, 'POST', body),
-  put: <T>(endpoint: string, body: unknown) => apiRequest<T>(endpoint, 'PUT', body),
-  patch: <T>(endpoint: string, body: unknown) => apiRequest<T>(endpoint, 'PATCH', body),
-  delete: <T>(endpoint: string) => apiRequest<T>(endpoint, 'DELETE'),
+  get: <T>(endpoint: string) => apiRequestWithRetry<T>(endpoint, 'GET'),
+  post: <T>(endpoint: string, body: unknown) => apiRequestWithRetry<T>(endpoint, 'POST', body),
+  put: <T>(endpoint: string, body: unknown) => apiRequestWithRetry<T>(endpoint, 'PUT', body),
+  patch: <T>(endpoint: string, body: unknown) => apiRequestWithRetry<T>(endpoint, 'PATCH', body),
+  delete: <T>(endpoint: string) => apiRequestWithRetry<T>(endpoint, 'DELETE'),
 };
 
 export default api;

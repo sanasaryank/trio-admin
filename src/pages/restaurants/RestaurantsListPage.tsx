@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Alert } from '@mui/material';
 import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  History as HistoryIcon,
   FilterList as FilterListIcon,
+  QrCode as QrCodeIcon,
   BarChart as BarChartIcon,
-  Campaign as CampaignIcon,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 
 // API
-import { restaurantsApi, dictionariesApi } from '../../api/endpoints';
+import { restaurantsApi } from '../../api/endpoints';
 
 // Atoms
 import Button from '../../components/ui/atoms/Button';
@@ -25,7 +30,8 @@ import FilterDrawer from '../../components/ui/molecules/FilterDrawer';
 import ConfirmDialog from '../../components/ui/molecules/ConfirmDialog';
 
 // Common components
-import { RestaurantCampaignsModal } from '../../components/restaurants/RestaurantCampaignsModal';
+import { AuditDrawer } from '../../components/common/AuditDrawer';
+import { RestaurantFormDialog } from '../../components/restaurants/RestaurantFormDialog';
 
 // Hooks
 import {
@@ -34,35 +40,46 @@ import {
   useConfirmDialog,
   useFetch,
   useDrawer,
+  useBlockToggle,
+  useRestaurantDictionaries,
 } from '../../hooks';
 
 // Utils
-import { formatTimestamp } from '../../utils/dateUtils';
+import { logger } from '../../utils/logger';
+import { getDisplayName } from '../../utils/dictionaryUtils';
+import { getStatusFilterOptions } from '../../utils/filterUtils';
 
 // Types
 import type {
-  Restaurant,
+  RestaurantListItem,
   RestaurantFilters,
-  Country,
-  City,
-  District,
-  RestaurantType,
-  PriceSegment,
-  MenuType,
-  IntegrationType,
 } from '../../types';
 
 type SortField =
   | 'id'
   | 'name'
-  | 'cityId'
-  | 'districtId'
-  | 'createdAt'
-  | 'lastClientActivityAt'
-  | 'lastRestaurantActivityAt';
+  | 'cityName'
+  | 'districtName';
+
+interface AuditDrawerState {
+  restaurantId: string | null;
+  restaurantName: string;
+}
+
+interface FormDialogState {
+  open: boolean;
+  restaurantId?: string;
+}
 
 export const RestaurantsListPage = () => {
+  const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // Form dialog state
+  const [formDialog, setFormDialog] = useState<FormDialogState>({
+    open: false,
+    restaurantId: undefined,
+  });
 
   // Fetch restaurants
   const {
@@ -70,44 +87,24 @@ export const RestaurantsListPage = () => {
     loading: isLoading,
     error: fetchError,
     refetch: loadRestaurants,
-  } = useFetch<Restaurant[]>(
-    async () => await restaurantsApi.list(),
-    []
-  );
-
-  // Fetch dictionaries
-  const { data: dictionaries } = useFetch(
+  } = useFetch<RestaurantListItem[]>(
     async () => {
-      const [
-        countriesData,
-        citiesData,
-        districtsData,
-        restaurantTypesData,
-        priceSegmentsData,
-        menuTypesData,
-        integrationTypesData,
-      ] = await Promise.all([
-        dictionariesApi.list('countries'),
-        dictionariesApi.list('cities'),
-        dictionariesApi.list('districts'),
-        dictionariesApi.list('restaurant-types'),
-        dictionariesApi.list('price-segments'),
-        dictionariesApi.list('menu-types'),
-        dictionariesApi.list('integration-types'),
-      ]);
-
-      return {
-        countries: countriesData as Country[],
-        cities: citiesData as City[],
-        districts: districtsData as District[],
-        restaurantTypes: restaurantTypesData as RestaurantType[],
-        priceSegments: priceSegmentsData as PriceSegment[],
-        menuTypes: menuTypesData as MenuType[],
-        integrationTypes: integrationTypesData as IntegrationType[],
-      };
+      try {
+        return await restaurantsApi.list();
+      } catch (error) {
+        logger.error('Error loading restaurants', error as Error);
+        return [];
+      }
     },
     []
   );
+
+  // Lazy load dictionaries only when filter drawer is opened
+  const [dictionariesLoaded, setDictionariesLoaded] = useState(false);
+  const { data: dictionariesData } = useRestaurantDictionaries();
+
+  // Use dictionaries only when loaded
+  const dictionaries = dictionariesLoaded ? dictionariesData : null;
 
   const {
     countries = [],
@@ -141,57 +138,14 @@ export const RestaurantsListPage = () => {
   // Confirm dialog
   const confirmDialog = useConfirmDialog();
 
-  // Campaign targeting modal
-  const [campaignTargetingModal, setCampaignTargetingModal] = useState<{
-    open: boolean;
-    restaurantId: number | null;
-    restaurantName: string;
-  }>({
-    open: false,
+  // Audit drawer
+  const auditDrawer = useDrawer();
+  const [auditState, setAuditState] = useState<AuditDrawerState>({
     restaurantId: null,
     restaurantName: '',
   });
 
-  // Fetch campaigns, placements, and schedules for campaign targeting
-  const { data: campaignData } = useFetch(
-    async () => {
-      const [campaignsData, placementsData, schedulesData, advertisersData] = await Promise.all([
-        import('../../api').then(m => m.campaignsApi.list()),
-        dictionariesApi.list('placements'),
-        import('../../api').then(m => m.schedulesApi.list()),
-        import('../../api').then(m => m.advertisersApi.list()),
-      ]);
-      return {
-        campaigns: campaignsData,
-        placements: placementsData,
-        schedules: schedulesData,
-        advertisers: advertisersData,
-      };
-    },
-    []
-  );
-
-  const {
-    campaigns = [],
-    placements = [],
-    schedules = [],
-    advertisers = [],
-  } = campaignData || {};
-
-  // Helper functions
-  const getCityName = useCallback(
-    (cityId: number): string => {
-      return cities.find((c) => c.id === cityId)?.name || `#${cityId}`;
-    },
-    [cities]
-  );
-
-  const getDistrictName = useCallback(
-    (districtId: number): string => {
-      return districts.find((d) => d.id === districtId)?.name || `#${districtId}`;
-    },
-    [districts]
-  );
+  // Helper functions - removed getCityName and getDistrictName as names come from API
 
   // Filtered cities based on selected country
   const filteredCities = useMemo(() => {
@@ -211,15 +165,17 @@ export const RestaurantsListPage = () => {
       // Status filter
       if (currentFilters.status !== 'all') {
         const isBlocked = currentFilters.status === 'blocked';
-        if (restaurant.blocked !== isBlocked) return false;
+        if (restaurant.isBlocked !== isBlocked) return false;
       }
 
       // Search filter
       if (currentFilters.search) {
         const searchLower = currentFilters.search.toLowerCase();
-        const matchesId = restaurant.id.toString().includes(searchLower);
-        const matchesName = restaurant.name.toLowerCase().includes(searchLower);
-        if (!matchesId && !matchesName) return false;
+        const restaurantName = getDisplayName(restaurant.name);
+        const matchesName = restaurantName.toLowerCase().includes(searchLower);
+        const matchesCity = restaurant.cityName.toLowerCase().includes(searchLower);
+        const matchesDistrict = restaurant.districtName.toLowerCase().includes(searchLower);
+        if (!matchesName && !matchesCity && !matchesDistrict) return false;
       }
 
       // Country filter
@@ -237,22 +193,28 @@ export const RestaurantsListPage = () => {
         return false;
       }
 
-      // Type filter (array intersection)
+      // Restaurant type filter
       if (currentFilters.typeId && currentFilters.typeId.length > 0) {
-        const hasMatch = currentFilters.typeId.some(id => restaurant.typeId.includes(id));
-        if (!hasMatch) return false;
+        const hasMatchingType = currentFilters.typeId.some(typeId => 
+          restaurant.typeId.includes(typeId)
+        );
+        if (!hasMatchingType) return false;
       }
 
-      // Price segment filter (array intersection)
+      // Price segment filter
       if (currentFilters.priceSegmentId && currentFilters.priceSegmentId.length > 0) {
-        const hasMatch = currentFilters.priceSegmentId.some(id => restaurant.priceSegmentId.includes(id));
-        if (!hasMatch) return false;
+        const hasMatchingSegment = currentFilters.priceSegmentId.some(segmentId => 
+          restaurant.priceSegmentId.includes(segmentId)
+        );
+        if (!hasMatchingSegment) return false;
       }
 
-      // Menu type filter (array intersection)
+      // Menu type filter
       if (currentFilters.menuTypeId && currentFilters.menuTypeId.length > 0) {
-        const hasMatch = currentFilters.menuTypeId.some(id => restaurant.menuTypeId.includes(id));
-        if (!hasMatch) return false;
+        const hasMatchingMenuType = currentFilters.menuTypeId.some(menuTypeId => 
+          restaurant.menuTypeId.includes(menuTypeId)
+        );
+        if (!hasMatchingMenuType) return false;
       }
 
       // Integration type filter
@@ -265,10 +227,10 @@ export const RestaurantsListPage = () => {
   }, [restaurants, applyFilters, filters]);
 
   // Table state with sorting and pagination
-  const tableState = useTableState<Restaurant>({
+  const tableState = useTableState<RestaurantListItem>({
     data: filteredRestaurants || [],
     initialRowsPerPage: 10,
-    defaultSortColumn: 'id' as keyof Restaurant,
+    defaultSortColumn: 'id' as keyof RestaurantListItem,
     defaultSortDirection: 'asc',
   });
 
@@ -283,27 +245,19 @@ export const RestaurantsListPage = () => {
 
         switch (sortField) {
           case 'id':
-            compareValue = a.id - b.id;
+            compareValue = a.id.localeCompare(b.id);
             break;
-          case 'name':
-            compareValue = a.name.localeCompare(b.name);
+          case 'name': {
+            const aName = getDisplayName(a.name);
+            const bName = getDisplayName(b.name);
+            compareValue = aName.localeCompare(bName);
             break;
-          case 'cityId':
-            compareValue = getCityName(a.cityId).localeCompare(getCityName(b.cityId));
+          }
+          case 'cityName':
+            compareValue = a.cityName.localeCompare(b.cityName);
             break;
-          case 'districtId':
-            compareValue = getDistrictName(a.districtId).localeCompare(
-              getDistrictName(b.districtId)
-            );
-            break;
-          case 'createdAt':
-            compareValue = a.createdAt - b.createdAt;
-            break;
-          case 'lastClientActivityAt':
-            compareValue = (a.lastClientActivityAt || 0) - (b.lastClientActivityAt || 0);
-            break;
-          case 'lastRestaurantActivityAt':
-            compareValue = (a.lastRestaurantActivityAt || 0) - (b.lastRestaurantActivityAt || 0);
+          case 'districtName':
+            compareValue = a.districtName.localeCompare(b.districtName);
             break;
         }
 
@@ -319,8 +273,6 @@ export const RestaurantsListPage = () => {
     tableState.sortDirection,
     tableState.page,
     tableState.rowsPerPage,
-    getCityName,
-    getDistrictName,
   ]);
 
   // Handlers
@@ -339,102 +291,73 @@ export const RestaurantsListPage = () => {
     filterDrawer.close();
   }, [resetFilters, resetTempFilters, tableState, filterDrawer]);
 
-  const handleBlockToggle = useCallback(
-    (restaurant: Restaurant) => {
-      confirmDialog.open({
-        title: restaurant.blocked ? t('restaurants.unblockConfirmTitle') : t('restaurants.blockConfirmTitle'),
-        message: restaurant.blocked
-          ? t('restaurants.unblockConfirmMessage', { name: restaurant.name })
-          : t('restaurants.blockConfirmMessage', { name: restaurant.name }),
-        confirmText: t('common.confirm'),
-        cancelText: t('common.cancel'),
-        onConfirm: async () => {
-          try {
-            await restaurantsApi.block(restaurant.id, !restaurant.blocked);
-            await loadRestaurants();
-          } catch (err) {
-            console.error('Error toggling block status:', err);
-          }
-        },
-      });
+  const handleBlockToggle = useBlockToggle<RestaurantListItem>({
+    confirmDialog,
+    blockApi: async (id, isBlocked) => {
+      await restaurantsApi.block(id, isBlocked);
+      // Return the updated item from the list
+      return restaurants?.find(r => r.id === id) as RestaurantListItem;
     },
-    [confirmDialog, loadRestaurants, t]
+    onSuccess: async () => {
+      await loadRestaurants();
+    },
+    getItemName: (restaurant) => getDisplayName(restaurant.name),
+    translationKeys: {
+      blockTitle: 'restaurants.blockConfirmTitle',
+      unblockTitle: 'restaurants.unblockConfirmTitle',
+      blockMessage: 'restaurants.blockConfirmMessage',
+      unblockMessage: 'restaurants.unblockConfirmMessage',
+    },
+    logContext: 'RestaurantsListPage',
+  });
+
+  const handleEdit = useCallback(
+    (id: string) => {
+      setFormDialog({ open: true, restaurantId: id });
+    },
+    []
   );
 
-
-
-  const handleCampaignTargeting = useCallback((restaurant: Restaurant) => {
-    setCampaignTargetingModal({
-      open: true,
-      restaurantId: restaurant.id,
-      restaurantName: restaurant.name,
-    });
-  }, []);
-
-  const handleCloseCampaignTargeting = useCallback(() => {
-    setCampaignTargetingModal({
-      open: false,
-      restaurantId: null,
-      restaurantName: '',
-    });
-  }, []);
-
-  const handleSaveCampaignTargeting = useCallback(
-    async (campaignTargets: { campaignId: number; slots: { id: number; schedules: number[] }[] }[]) => {
-      try {
-        // Update each campaign's targets
-        const campaignsApi = await import('../../api').then(m => m.campaignsApi);
-        
-        for (const ct of campaignTargets) {
-          const campaign = campaigns.find(c => c.id === ct.campaignId);
-          if (!campaign) continue;
-
-          // Remove this restaurant from targets if it exists
-          const updatedTargets = (campaign.targets || []).filter(t => t.id !== campaignTargetingModal.restaurantId);
-          
-          // Add it back with new slot configuration
-          updatedTargets.push({
-            id: campaignTargetingModal.restaurantId!,
-            slots: ct.slots,
-          });
-
-          await campaignsApi.update(ct.campaignId, {
-            ...campaign,
-            targets: updatedTargets,
-          });
-        }
-
-        // Also remove from campaigns that are no longer targeted
-        const targetedCampaignIds = campaignTargets.map(ct => ct.campaignId);
-        for (const campaign of campaigns) {
-          if (!targetedCampaignIds.includes(campaign.id)) {
-            const hasTarget = campaign.targets?.some(t => t.id === campaignTargetingModal.restaurantId);
-            if (hasTarget) {
-              await campaignsApi.update(campaign.id, {
-                ...campaign,
-                targets: campaign.targets!.filter(t => t.id !== campaignTargetingModal.restaurantId),
-              });
-            }
-          }
-        }
-
-        handleCloseCampaignTargeting();
-        // Optionally show success message
-      } catch (error) {
-        console.error('Failed to save campaign targeting:', error);
-        // Optionally show error message
-      }
+  const handleViewAudit = useCallback(
+    (restaurant: RestaurantListItem) => {
+      const displayName = getDisplayName(restaurant.name);
+      
+      setAuditState({
+        restaurantId: restaurant.id,
+        restaurantName: displayName,
+      });
+      auditDrawer.open();
     },
-    [campaigns, campaignTargetingModal.restaurantId, handleCloseCampaignTargeting]
+    [auditDrawer]
+  );
+
+  const handleAddRestaurant = useCallback(() => {
+    setFormDialog({ open: true, restaurantId: undefined });
+  }, []);
+
+  const handleCloseFormDialog = useCallback(() => {
+    setFormDialog({ open: false, restaurantId: undefined });
+    loadRestaurants(); // Refresh list after closing dialog
+  }, [loadRestaurants]);
+
+  const handleQRCodes = useCallback(
+    (id: string) => {
+      navigate(`/restaurants/${id}/qr`);
+    },
+    [navigate]
   );
 
   const handleStatistics = useCallback(() => {
     alert('Not implemented');
   }, []);
 
+  const handleConfigurationErrors = useCallback(() => {
+    alert('Not implemented');
+  }, []);
+
   const handleCountryChange = useCallback(
-    (value: string | number) => {
-      const countryId = value ? Number(value) : undefined;
+    (value: string | number | number[]) => {
+      const countryId = value && !Array.isArray(value) ? String(value) : undefined;
       updateTempFilter('countryId', countryId);
       updateTempFilter('cityId', undefined);
       updateTempFilter('districtId', undefined);
@@ -443,77 +366,59 @@ export const RestaurantsListPage = () => {
   );
 
   const handleCityChange = useCallback(
-    (value: string | number) => {
-      const cityId = value ? Number(value) : undefined;
+    (value: string | number | number[]) => {
+      const cityId = value && !Array.isArray(value) ? String(value) : undefined;
       updateTempFilter('cityId', cityId);
       updateTempFilter('districtId', undefined);
     },
     [updateTempFilter]
   );
 
-  // Sync temp filters when drawer opens
+  // Sync temp filters when drawer opens and load dictionaries if needed
   useEffect(() => {
     if (filterDrawer.isOpen) {
       Object.keys(filters).forEach((key) => {
         updateTempFilter(key as keyof RestaurantFilters, filters[key as keyof RestaurantFilters]);
       });
+      // Load dictionaries on first filter drawer open
+      if (!dictionariesLoaded) {
+        setDictionariesLoaded(true);
+      }
     }
-  }, [filterDrawer.isOpen]);
+  }, [filterDrawer.isOpen, filters, updateTempFilter, dictionariesLoaded]);
 
   // Table columns
-  const columns = useMemo<Column<Restaurant>[]>(
+  const columns = useMemo<Column<RestaurantListItem>[]>(
     () => [
-      {
-        id: 'id',
-        label: 'ID',
-        sortable: true,
-        width: 80,
-      },
       {
         id: 'name',
         label: t('restaurants.name'),
         sortable: true,
-        render: (restaurant) => (
-          <Link href={restaurant.crmUrl} external>
-            {restaurant.name}
-          </Link>
-        ),
+        render: (restaurant) => {
+          const displayName = getDisplayName(restaurant.name);
+          
+          // Only render as link if crmUrl exists
+          if (restaurant.crmUrl) {
+            return (
+              <Link href={restaurant.crmUrl} external>
+                {displayName}
+              </Link>
+            );
+          }
+          return displayName;
+        },
       },
       {
-        id: 'cityId',
+        id: 'cityName',
         label: t('restaurants.city'),
         sortable: true,
-        render: (restaurant) => getCityName(restaurant.cityId),
+        render: (restaurant) => restaurant.cityName,
       },
       {
-        id: 'districtId',
+        id: 'districtName',
         label: t('restaurants.district'),
         sortable: true,
-        render: (restaurant) => getDistrictName(restaurant.districtId),
-      },
-      {
-        id: 'createdAt',
-        label: t('restaurants.created'),
-        sortable: true,
-        render: (restaurant) => formatTimestamp(restaurant.createdAt),
-      },
-      {
-        id: 'lastClientActivityAt',
-        label: t('restaurants.lastClientActivity'),
-        sortable: true,
-        render: (restaurant) =>
-          restaurant.lastClientActivityAt
-            ? formatTimestamp(restaurant.lastClientActivityAt)
-            : '-',
-      },
-      {
-        id: 'lastRestaurantActivityAt',
-        label: t('restaurants.lastRestaurantActivity'),
-        sortable: true,
-        render: (restaurant) =>
-          restaurant.lastRestaurantActivityAt
-            ? formatTimestamp(restaurant.lastRestaurantActivityAt)
-            : '-',
+        render: (restaurant) => restaurant.districtName,
       },
       {
         id: 'actions',
@@ -529,8 +434,21 @@ export const RestaurantsListPage = () => {
             }}
           >
             <Switch
-              checked={!restaurant.blocked}
-              onChange={() => handleBlockToggle(restaurant)}
+              checked={!restaurant.isBlocked}
+              disabled={true}
+              onChange={() => {}}
+            />
+            <IconButton
+              onClick={() => handleEdit(restaurant.id)}
+              tooltip={t('common.edit')}
+              size="small"
+              icon={<EditIcon />}
+            />
+            <IconButton
+              onClick={() => handleViewAudit(restaurant)}
+              tooltip={t('restaurants.auditLog')}
+              size="small"
+              icon={<HistoryIcon />}
             />
             <IconButton
               onClick={handleStatistics}
@@ -539,21 +457,28 @@ export const RestaurantsListPage = () => {
               icon={<BarChartIcon />}
             />
             <IconButton
-              onClick={() => handleCampaignTargeting(restaurant)}
-              tooltip={t('restaurants.campaignTargeting')}
+              onClick={handleConfigurationErrors}
+              tooltip={t('restaurants.configurationErrors')}
               size="small"
-              icon={<CampaignIcon />}
+              icon={<ErrorIcon />}
+            />
+            <IconButton
+              onClick={() => handleQRCodes(restaurant.id)}
+              tooltip={t('restaurants.qrCodes')}
+              size="small"
+              icon={<QrCodeIcon />}
             />
           </Box>
         ),
       },
     ],
     [
-      getCityName,
-      getDistrictName,
       handleBlockToggle,
-      handleCampaignTargeting,
+      handleEdit,
+      handleViewAudit,
+      handleQRCodes,
       handleStatistics,
+      handleConfigurationErrors,
       t,
     ]
   );
@@ -564,13 +489,18 @@ export const RestaurantsListPage = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">{t('restaurants.title')}</Typography>
-        <Button
-          variant="outlined"
-          startIcon={<FilterListIcon />}
-          onClick={filterDrawer.open}
-        >
-          {t('common.filters')}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<FilterListIcon />}
+            onClick={filterDrawer.open}
+          >
+            {t('common.filters')}
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddRestaurant}>
+            {t('restaurants.add')}
+          </Button>
+        </Box>
       </Box>
 
       {error && (
@@ -591,7 +521,7 @@ export const RestaurantsListPage = () => {
         columns={columns}
         data={sortedAndPaginatedData}
         loading={isLoading}
-        onSort={(column) => tableState.handleSort(column as keyof Restaurant)}
+        onSort={(column) => tableState.handleSort(column as keyof RestaurantListItem)}
         sortColumn={tableState.sortColumn ?? undefined}
         sortDirection={tableState.sortDirection}
         rowKey="id"
@@ -621,11 +551,7 @@ export const RestaurantsListPage = () => {
           label={t('common.status')}
           value={tempFilters.status || 'active'}
           onChange={(value) => updateTempFilter('status', value as 'active' | 'blocked' | 'all')}
-          options={[
-            { value: 'active', label: t('common.active') },
-            { value: 'blocked', label: t('common.blocked') },
-            { value: 'all', label: t('common.all') },
-          ]}
+          options={getStatusFilterOptions(t)}
         />
 
         <Select
@@ -637,7 +563,7 @@ export const RestaurantsListPage = () => {
             { value: '', label: t('common.all') },
             ...countries.map((country) => ({
               value: country.id,
-              label: country.name,
+              label: getDisplayName(country.name),
             })),
           ]}
         />
@@ -651,7 +577,7 @@ export const RestaurantsListPage = () => {
             { value: '', label: t('common.all') },
             ...filteredCities.map((city) => ({
               value: city.id,
-              label: city.name,
+              label: getDisplayName(city.name),
             })),
           ]}
           disabled={!tempFilters.countryId}
@@ -662,13 +588,13 @@ export const RestaurantsListPage = () => {
           label={t('restaurants.district')}
           value={tempFilters.districtId || ''}
           onChange={(value) =>
-            updateTempFilter('districtId', value ? Number(value) : undefined)
+            updateTempFilter('districtId', value && !Array.isArray(value) ? String(value) : undefined)
           }
           options={[
             { value: '', label: t('common.all') },
             ...filteredDistricts.map((district) => ({
               value: district.id,
-              label: district.name,
+              label: getDisplayName(district.name),
             })),
           ]}
           disabled={!tempFilters.cityId}
@@ -677,12 +603,12 @@ export const RestaurantsListPage = () => {
         <Select
           name="restaurantType"
           label={t('restaurants.type')}
-          value={tempFilters.typeId || []}
-          onChange={(value) => updateTempFilter('typeId', Array.isArray(value) && value.length > 0 ? value as number[] : undefined)}
+          value={(tempFilters.typeId || []) as any}
+          onChange={(value) => updateTempFilter('typeId', Array.isArray(value) && value.length > 0 ? value.map(String) : undefined)}
           options={[
             ...restaurantTypes.map((type) => ({
               value: type.id,
-              label: type.name,
+              label: getDisplayName(type.name),
             })),
           ]}
           multiple={true}
@@ -691,14 +617,14 @@ export const RestaurantsListPage = () => {
         <Select
           name="priceSegment"
           label={t('restaurants.priceSegment')}
-          value={tempFilters.priceSegmentId || []}
+          value={(tempFilters.priceSegmentId || []) as any}
           onChange={(value) =>
-            updateTempFilter('priceSegmentId', Array.isArray(value) && value.length > 0 ? value as number[] : undefined)
+            updateTempFilter('priceSegmentId', Array.isArray(value) && value.length > 0 ? value.map(String) : undefined)
           }
           options={[
             ...priceSegments.map((segment) => ({
               value: segment.id,
-              label: segment.name,
+              label: getDisplayName(segment.name),
             })),
           ]}
           multiple={true}
@@ -707,12 +633,12 @@ export const RestaurantsListPage = () => {
         <Select
           name="menuType"
           label={t('restaurants.menuType')}
-          value={tempFilters.menuTypeId || []}
-          onChange={(value) => updateTempFilter('menuTypeId', Array.isArray(value) && value.length > 0 ? value as number[] : undefined)}
+          value={(tempFilters.menuTypeId || []) as any}
+          onChange={(value) => updateTempFilter('menuTypeId', Array.isArray(value) && value.length > 0 ? value.map(String) : undefined)}
           options={[
             ...menuTypes.map((type) => ({
               value: type.id,
-              label: type.name,
+              label: getDisplayName(type.name),
             })),
           ]}
           multiple={true}
@@ -723,13 +649,13 @@ export const RestaurantsListPage = () => {
           label={t('restaurants.integrationType')}
           value={tempFilters.integrationTypeId || ''}
           onChange={(value) =>
-            updateTempFilter('integrationTypeId', value ? Number(value) : undefined)
+            updateTempFilter('integrationTypeId', value && !Array.isArray(value) ? String(value) : undefined)
           }
           options={[
             { value: '', label: t('common.all') },
             ...integrationTypes.map((type) => ({
               value: type.id,
-              label: type.name,
+              label: getDisplayName(type.name),
             })),
           ]}
         />
@@ -738,17 +664,20 @@ export const RestaurantsListPage = () => {
       {/* Confirm Dialog */}
       <ConfirmDialog {...confirmDialog.dialogProps} />
 
-      {/* Campaign Targeting Modal */}
-      <RestaurantCampaignsModal
-        open={campaignTargetingModal.open}
-        onClose={handleCloseCampaignTargeting}
-        onSave={handleSaveCampaignTargeting}
-        restaurantId={campaignTargetingModal.restaurantId}
-        restaurantName={campaignTargetingModal.restaurantName}
-        campaigns={campaigns}
-        placements={placements}
-        schedules={schedules}
-        advertisers={advertisers}
+      {/* Audit Drawer */}
+      <AuditDrawer
+        open={auditDrawer.isOpen}
+        entityType="restaurant"
+        entityId={auditState.restaurantId}
+        entityLabel={auditState.restaurantName}
+        onClose={auditDrawer.close}
+      />
+
+      {/* Restaurant Form Dialog */}
+      <RestaurantFormDialog
+        open={formDialog.open}
+        onClose={handleCloseFormDialog}
+        restaurantId={formDialog.restaurantId}
       />
     </Box>
   );

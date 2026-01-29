@@ -26,7 +26,9 @@ import {
   useConfirmDialog,
   useFetch,
   useDrawer,
+  useBlockToggle,
 } from '../../hooks';
+import { getStatusFilterOptions } from '../../utils/filterUtils';
 import { logger } from '../../utils/logger';
 import type { Employee, EmployeeFilters } from '../../types';
 
@@ -110,32 +112,23 @@ export const EmployeesListPage = () => {
   const auditDrawer = useDrawer();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
-  // Handle block/unblock toggle
-  const handleBlockToggle = useCallback(
-    (employee: Employee) => {
-      confirmDialog.open({
-        title: employee.isBlocked
-          ? t('employees.unblockConfirmTitle')
-          : t('employees.blockConfirmTitle'),
-        message: employee.isBlocked
-          ? t('employees.unblockConfirmMessage', { name: getFullName(employee) })
-          : t('employees.blockConfirmMessage', { name: getFullName(employee) }),
-        confirmText: t('common.confirm'),
-        cancelText: t('common.cancel'),
-        onConfirm: async () => {
-          try {
-            await employeesApi.block(employee.id, !employee.isBlocked);
-            await loadEmployees();
-            enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
-          } catch (err) {
-            logger.error('Error toggling employee block status', err as Error, { employeeId: employee.id });
-            enqueueSnackbar(t('common.error'), { variant: 'error' });
-          }
-        },
-      });
+  // Handle block/unblock toggle using reusable hook
+  const handleBlockToggle = useBlockToggle({
+    confirmDialog,
+    blockApi: (id, isBlocked) => employeesApi.block(id, isBlocked),
+    onSuccess: async () => {
+      await loadEmployees();
+      enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
     },
-    [confirmDialog, getFullName, loadEmployees, t, enqueueSnackbar]
-  );
+    getItemName: getFullName,
+    translationKeys: {
+      blockTitle: 'employees.blockConfirmTitle',
+      unblockTitle: 'employees.unblockConfirmTitle',
+      blockMessage: 'employees.blockConfirmMessage',
+      unblockMessage: 'employees.unblockConfirmMessage',
+    },
+    logContext: 'EmployeesListPage',
+  });
 
   // Handle edit
   const handleEdit = useCallback(
@@ -225,11 +218,7 @@ export const EmployeesListPage = () => {
 
   // Status options for filter
   const statusOptions = useMemo<SelectOption[]>(
-    () => [
-      { value: 'active', label: t('common.active') },
-      { value: 'blocked', label: t('common.blocked') },
-      { value: 'all', label: t('common.all') },
-    ],
+    () => getStatusFilterOptions(t),
     [t]
   );
 

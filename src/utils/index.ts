@@ -13,6 +13,9 @@ export * from './dateUtils';
 // Dictionary utilities
 export * from './dictionaryUtils';
 
+// Filter utilities
+export * from './filterUtils';
+
 // Re-export types
 export type { LogLevel } from './logger';
 export type { DictionaryFieldsConfig } from './dictionaryUtils';

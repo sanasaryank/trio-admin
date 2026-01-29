@@ -26,12 +26,16 @@ import FilterDrawer from '../../components/ui/molecules/FilterDrawer';
 import ConfirmDialog from '../../components/ui/molecules/ConfirmDialog';
 
 // Reusable hooks
-import useTableState from '../../hooks/useTableState';
-import useFilters from '../../hooks/useFilters';
-import useConfirmDialog from '../../hooks/useConfirmDialog';
-import useFetch from '../../hooks/useFetch';
-import useToggle from '../../hooks/useToggle';
-import useDrawer from '../../hooks/useDrawer';
+import {
+  useTableState,
+  useFilters,
+  useConfirmDialog,
+  useFetch,
+  useToggle,
+  useDrawer,
+  useBlockToggle,
+} from '../../hooks';
+import { getStatusFilterOptions } from '../../utils/filterUtils';
 import { logger } from '../../utils/logger';
 
 // Form dialog
@@ -39,7 +43,7 @@ import { DictionaryFormDialog } from '../../components/dictionaries/DictionaryFo
 
 export const DictionariesPage = () => {
   const { dictKey } = useParams<{ dictKey: DictionaryKey }>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { enqueueSnackbar } = useSnackbar();
 
   // State for items and related data
@@ -47,7 +51,7 @@ export const DictionariesPage = () => {
 
   // Form dialog state
   const [formDialogOpen, _toggleFormDialog, setFormDialogOpen] = useToggle(false);
-  const [editingItemId, setEditingItemId] = useState<number | undefined>(undefined);
+  const [editingItemId, setEditingItemId] = useState<string | undefined>(undefined);
 
   // Hooks
   const filterDrawer = useDrawer();
@@ -76,7 +80,12 @@ export const DictionariesPage = () => {
   const { data: countries } = useFetch<Country[]>(
     async () => {
       if (dictKey !== 'cities') return [];
-      return (await dictionariesApi.list('countries')) as Country[];
+      try {
+        return (await dictionariesApi.list('countries')) as Country[];
+      } catch (error) {
+        logger.error('Error loading countries', error as Error, { context: 'DictionariesPage' });
+        return [];
+      }
     },
     [dictKey]
   );
@@ -85,7 +94,12 @@ export const DictionariesPage = () => {
   const { data: cities } = useFetch<City[]>(
     async () => {
       if (dictKey !== 'districts') return [];
-      return (await dictionariesApi.list('cities')) as City[];
+      try {
+        return (await dictionariesApi.list('cities')) as City[];
+      } catch (error) {
+        logger.error('Error loading cities', error as Error, { context: 'DictionariesPage' });
+        return [];
+      }
     },
     [dictKey]
   );
@@ -94,15 +108,18 @@ export const DictionariesPage = () => {
   useMemo(() => {
     if (fetchedItems) {
       setItems(fetchedItems);
+    } else if (fetchError) {
+      // Clear items on error to prevent showing stale data
+      setItems([]);
     }
-  }, [fetchedItems]);
+  }, [fetchedItems, fetchError]);
 
   // Apply filters to items
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       if (filters.status !== 'all') {
         const isBlocked = filters.status === 'blocked';
-        if (item.blocked !== isBlocked) return false;
+        if (item.isBlocked !== isBlocked) return false;
       }
       return true;
     });
@@ -117,8 +134,27 @@ export const DictionariesPage = () => {
   });
 
   // Memoized helper functions for related data
+  const getDisplayName = useCallback(
+    (item: DictionaryItemType): string => {
+      // For geographic data (countries, cities, districts), name is a string
+      if (typeof item.name === 'string') {
+        return item.name;
+      }
+      // For dictionaries, name is multilingual object
+      const currentLang = i18n.language.toUpperCase();
+      if (currentLang === 'HY' || currentLang === 'ARM') {
+        return item.name.ARM || item.name.ENG;
+      } else if (currentLang === 'RU' || currentLang === 'RUS') {
+        return item.name.RUS || item.name.ENG;
+      } else {
+        return item.name.ENG || item.name.ARM;
+      }
+    },
+    [i18n.language]
+  );
+
   const getCountryName = useCallback(
-    (countryId: number): string => {
+    (countryId: string): string => {
       const country = countries?.find((c) => c.id === countryId);
       return country?.name || `Country #${countryId}`;
     },
@@ -126,7 +162,7 @@ export const DictionariesPage = () => {
   );
 
   const getCityName = useCallback(
-    (cityId: number): string => {
+    (cityId: string): string => {
       const city = cities?.find((c) => c.id === cityId);
       return city?.name || `City #${cityId}`;
     },
@@ -144,32 +180,28 @@ export const DictionariesPage = () => {
     tableState.handlePageChange(0);
   }, [resetFilters, tableState]);
 
-  const handleBlockToggle = useCallback(
-    (item: DictionaryItemType) => {
-      confirmDialog.open({
-        title: item.blocked ? t('dictionaries.unblockConfirmTitle') : t('dictionaries.blockConfirmTitle'),
-        message: item.blocked
-          ? t('dictionaries.unblockConfirmMessage', { name: item.name })
-          : t('dictionaries.blockConfirmMessage', { name: item.name }),
-        confirmText: t('common.confirm'),
-        cancelText: t('common.cancel'),
-        onConfirm: async () => {
-          if (!dictKey) return;
-          try {
-            await dictionariesApi.block(dictKey, item.id, !item.blocked);
-            await loadData();
-            enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
-          } catch (err) {
-            logger.error('Error toggling block status', err as Error, { dictKey, itemId: item.id });
-            enqueueSnackbar(t('common.error'), { variant: 'error' });
-          }
-        },
-      });
+  // Handle block/unblock toggle using reusable hook
+  const handleBlockToggle = useBlockToggle({
+    confirmDialog,
+    blockApi: (id, isBlocked) => {
+      if (!dictKey) throw new Error('Dictionary key not found');
+      return dictionariesApi.block(dictKey, id, isBlocked);
     },
-    [confirmDialog, dictKey, loadData, t, enqueueSnackbar]
-  );
+    onSuccess: async () => {
+      await loadData();
+      enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
+    },
+    getItemName: getDisplayName,
+    translationKeys: {
+      blockTitle: 'dictionaries.blockConfirmTitle',
+      unblockTitle: 'dictionaries.unblockConfirmTitle',
+      blockMessage: 'dictionaries.blockConfirmMessage',
+      unblockMessage: 'dictionaries.unblockConfirmMessage',
+    },
+    logContext: 'DictionariesPage',
+  });
 
-  const handleEdit = useCallback((id: number) => {
+  const handleEdit = useCallback((id: string) => {
     setEditingItemId(id);
     setFormDialogOpen(true);
   }, [setFormDialogOpen]);
@@ -203,6 +235,7 @@ export const DictionariesPage = () => {
         id: 'name',
         label: t('dictionaries.name'),
         sortable: true,
+        render: (item) => getDisplayName(item),
       },
     ];
 
@@ -232,7 +265,7 @@ export const DictionariesPage = () => {
       render: (item) => (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
           <Switch
-            checked={!item.blocked}
+            checked={!item.isBlocked}
             onChange={() => handleBlockToggle(item)}
             color="primary"
           />
@@ -247,7 +280,7 @@ export const DictionariesPage = () => {
     });
 
     return baseColumns;
-  }, [dictKey, getCountryName, getCityName, handleBlockToggle, handleEdit, t]);
+  }, [dictKey, getCountryName, getCityName, getDisplayName, handleBlockToggle, handleEdit, t]);
 
   if (!dictKey) {
     return (
@@ -321,11 +354,7 @@ export const DictionariesPage = () => {
           label={t('common.status')}
           value={filters.status}
           onChange={(value) => updateFilter('status', value as 'active' | 'blocked' | 'all')}
-          options={[
-            { value: 'active', label: t('common.active') },
-            { value: 'blocked', label: t('common.blocked') },
-            { value: 'all', label: t('common.all') },
-          ]}
+          options={getStatusFilterOptions(t)}
         />
       </FilterDrawer>
 

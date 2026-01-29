@@ -39,3 +39,8 @@ export { default as useToggle } from './useToggle';
 // Utility hooks
 export { default as useDebounce } from './useDebounce';
 export { default as useLocalStorage } from './useLocalStorage';
+
+// Specialized hooks
+export { useBlockToggle } from './useBlockToggle';
+export { useFilterDrawer } from './useFilterDrawer';
+export { useRestaurantDictionaries } from './useRestaurantDictionaries';

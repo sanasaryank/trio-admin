@@ -7,7 +7,7 @@ import { Box, Paper, Typography, Alert, Divider, Grid, InputAdornment } from '@m
 import { useTranslation } from 'react-i18next';
 
 // API
-import { restaurantsApi, dictionariesApi } from '../../api/endpoints';
+import { restaurantsApi } from '../../api/endpoints';
 
 // Atoms
 import Button from '../../components/ui/atoms/Button';
@@ -23,19 +23,11 @@ import { LocationPicker } from '../../components/restaurants/LocationPicker';
 import { ConnectionDataFields } from '../../components/restaurants/ConnectionDataFields';
 
 // Hooks
-import { useFetch, useFormSubmit } from '../../hooks';
+import { useFetch, useFormSubmit, useRestaurantDictionaries } from '../../hooks';
 
 // Utils
 import { logger } from '../../utils/logger';
 import { getDisplayName } from '../../utils/dictionaryUtils';
-
-// Types
-import type {
-  RestaurantType,
-  PriceSegment,
-  MenuType,
-  IntegrationType,
-} from '../../types';
 
 const createRestaurantSchema = (t: (key: string) => string) => z.object({
   name: z.object({
@@ -186,48 +178,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
   );
 
   // Fetch dictionaries and locations
-  const { data: dictionaries, loading: isFetchingDictionaries } = useFetch(
-    async () => {
-      try {
-        const [
-          locationsData,
-          restaurantTypesData,
-          priceSegmentsData,
-          menuTypesData,
-          integrationTypesData,
-        ] = await Promise.all([
-          restaurantsApi.getLocations().catch(() => ({ countries: [], cities: [], districts: [] })),
-          dictionariesApi.list('restaurant-types').catch(() => []),
-          dictionariesApi.list('price-segments').catch(() => []),
-          dictionariesApi.list('menu-types').catch(() => []),
-          dictionariesApi.list('integration-types').catch(() => []),
-        ]);
-
-        return {
-          countries: locationsData.countries || [],
-          cities: locationsData.cities || [],
-          districts: locationsData.districts || [],
-          restaurantTypes: (restaurantTypesData as RestaurantType[]) || [],
-          priceSegments: (priceSegmentsData as PriceSegment[]) || [],
-          menuTypes: (menuTypesData as MenuType[]) || [],
-          integrationTypes: (integrationTypesData as IntegrationType[]) || [],
-        };
-      } catch (error) {
-        logger.error('Error loading dictionaries', error as Error);
-        // Return empty data to prevent crash
-        return {
-          countries: [],
-          cities: [],
-          districts: [],
-          restaurantTypes: [],
-          priceSegments: [],
-          menuTypes: [],
-          integrationTypes: [],
-        };
-      }
-    },
-    []
-  );
+  const { data: dictionaries, loading: isFetchingDictionaries } = useRestaurantDictionaries();
 
   const {
     countries = [],

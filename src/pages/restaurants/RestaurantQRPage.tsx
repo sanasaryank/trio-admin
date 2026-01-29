@@ -40,9 +40,11 @@ import {
   useFetch,
   useDrawer,
   useToggle,
+  useBlockToggle,
 } from '../../hooks';
 import { logger } from '../../utils/logger';
 import { getDisplayName } from '../../utils/dictionaryUtils';
+import { getStatusFilterOptions } from '../../utils/filterUtils';
 
 // Types
 import type { QRCode } from '../../types';
@@ -243,28 +245,24 @@ export const RestaurantQRPage = () => {
     filterDrawer.close();
   }, [resetFilters, resetTempFilters, tableState, filterDrawer]);
 
-  const handleBlockToggle = useCallback(
-    (qr: QRCode) => {
-      confirmDialog.open({
-        title: qr.isBlocked ? t('restaurants.unblockQRTitle') : t('restaurants.blockQRTitle'),
-        message: qr.isBlocked
-          ? t('restaurants.unblockQRMessage', { qrText: qr.qrText })
-          : t('restaurants.blockQRMessage', { qrText: qr.qrText }),
-        confirmText: t('common.confirm'),
-        cancelText: t('common.cancel'),
-        onConfirm: async () => {
-          try {
-            if (!id) return;
-            await restaurantsApi.blockQR(id, qr.id, !qr.isBlocked);
-            await loadQRCodes();
-          } catch (err) {
-            logger.error('Error toggling QR block status', err as Error, { restaurantId: id, qrId: qr.id });
-          }
-        },
-      });
+  const handleBlockToggle = useBlockToggle<QRCode>({
+    confirmDialog,
+    blockApi: async (qrId, isBlocked) => {
+      if (!id) throw new Error('Restaurant ID not found');
+      return await restaurantsApi.blockQR(id, qrId, isBlocked);
     },
-    [confirmDialog, id, loadQRCodes]
-  );
+    onSuccess: async () => {
+      await loadQRCodes();
+    },
+    getItemName: (qr) => qr.qrText,
+    translationKeys: {
+      blockTitle: 'restaurants.blockQRTitle',
+      unblockTitle: 'restaurants.unblockQRTitle',
+      blockMessage: 'restaurants.blockQRMessage',
+      unblockMessage: 'restaurants.unblockQRMessage',
+    },
+    logContext: 'RestaurantQRPage',
+  });
 
   const handleOpenCreateDialog = useCallback(() => {
     reset({ quantity: 1, type: 'Static' });
@@ -501,11 +499,7 @@ export const RestaurantQRPage = () => {
           label={t('common.status')}
           value={tempFilters.status || 'active'}
           onChange={(value) => updateTempFilter('status', value as StatusFilter)}
-          options={[
-            { value: 'active', label: t('common.active') },
-            { value: 'blocked', label: t('common.blocked') },
-            { value: 'all', label: t('common.all') },
-          ]}
+          options={getStatusFilterOptions(t)}
         />
         <Box sx={{ mt: 2 }}>
           <Select

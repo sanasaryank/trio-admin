@@ -1,11 +1,13 @@
-import { mockAuditApi } from '../mock';
 import type { AuditEvent, AuditEntityType } from '../../types';
 
+// Audit API - placeholder for real implementation
 export const auditApi = {
-  getEvents: (params?: {
+  getEvents: async (params?: {
     entityType?: AuditEntityType;
-    entityId?: number | string;
+    entityId?: string;
   }): Promise<AuditEvent[]> => {
-    return mockAuditApi.getEvents(params);
+    // TODO: Implement real audit API when endpoint is available
+    console.warn('Audit API not yet implemented, returning empty array');
+    return [];
   },
 };

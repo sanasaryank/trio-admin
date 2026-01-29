@@ -1,38 +1,44 @@
 /**
  * Environment configuration utility
- * Provides type-safe access to environment variables
+ * Provides type-safe access to environment variables with runtime validation
  */
 
-interface EnvironmentConfig {
+import { z } from 'zod';
+
+/**
+ * Environment configuration schema
+ */
+const envSchema = z.object({
   // Application
-  appMode: 'development' | 'production';
-  appName: string;
-  appVersion: string;
+  appMode: z.enum(['development', 'production']),
+  appName: z.string().min(1),
+  appVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
 
   // API
-  apiBaseUrl: string;
-  apiTimeout: number;
-  useMockApi: boolean;
+  apiBaseUrl: z.string().url(),
+  apiTimeout: z.number().positive(),
 
   // Features
-  enableAuditLog: boolean;
-  enableQrGeneration: boolean;
+  enableAuditLog: z.boolean(),
+  enableQrGeneration: z.boolean(),
 
   // Debug
-  debugMode: boolean;
-  logLevel: 'debug' | 'info' | 'warn' | 'error';
+  debugMode: z.boolean(),
+  logLevel: z.enum(['debug', 'info', 'warn', 'error']),
 
   // Map
-  mapDefaultCenter: {
-    lat: number;
-    lng: number;
-  };
-  mapDefaultZoom: number;
+  mapDefaultCenter: z.object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+  }),
+  mapDefaultZoom: z.number().min(1).max(20),
 
   // Session
-  sessionTimeout: number;
-  tokenRefreshInterval: number;
-}
+  sessionTimeout: z.number().positive(),
+  tokenRefreshInterval: z.number().positive(),
+});
+
+type EnvironmentConfig = z.infer<typeof envSchema>;
 
 /**
  * Get environment variable value
@@ -67,9 +73,9 @@ const getEnvNumber = (key: string, defaultValue = 0): number => {
 };
 
 /**
- * Application environment configuration
+ * Application environment configuration with runtime validation
  */
-export const env: EnvironmentConfig = {
+const rawEnv = {
   // Application
   appMode: (getEnv('VITE_APP_MODE', 'development') as 'development' | 'production'),
   appName: getEnv('VITE_APP_NAME', 'Trio Admin'),
@@ -78,7 +84,6 @@ export const env: EnvironmentConfig = {
   // API
   apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://localhost:3000/api'),
   apiTimeout: getEnvNumber('VITE_API_TIMEOUT', 30000),
-  useMockApi: getEnvBoolean('VITE_USE_MOCK_API', true),
 
   // Features
   enableAuditLog: getEnvBoolean('VITE_ENABLE_AUDIT_LOG', true),
@@ -99,6 +104,21 @@ export const env: EnvironmentConfig = {
   sessionTimeout: getEnvNumber('VITE_SESSION_TIMEOUT', 3600000),
   tokenRefreshInterval: getEnvNumber('VITE_TOKEN_REFRESH_INTERVAL', 300000),
 };
+
+/**
+ * Validate and export environment configuration
+ */
+export const env: EnvironmentConfig = (() => {
+  try {
+    return envSchema.parse(rawEnv);
+  } catch (error) {
+    console.error('❌ Invalid environment configuration:', error);
+    if (error instanceof z.ZodError) {
+      console.error('Validation errors:', error.errors);
+    }
+    throw new Error('Environment configuration validation failed');
+  }
+})();
 
 /**
  * Check if running in development mode

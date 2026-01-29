@@ -3,6 +3,7 @@
     "add": "Add",
     "edit": "Edit",
     "delete": "Delete",
+    "create": "Create",
     "save": "Save",
     "cancel": "Cancel",
     "back": "Back",
@@ -42,7 +43,21 @@
     "yes": "Yes",
     "no": "No",
     "confirm": "Confirm",
-    "required": "Required"
+    "required": "Required",
+    "retry": "Retry",
+    "reload": "Reload"
+  },
+  "error": {
+    "somethingWentWrong": "Something went wrong",
+    "pleaseRefresh": "Please refresh the page or try again later.",
+    "restaurantsLoadFailed": "Failed to load restaurants",
+    "restaurantsLoadFailedMessage": "An error occurred while loading the restaurants. Please try again.",
+    "employeesLoadFailed": "Failed to load employees",
+    "employeesLoadFailedMessage": "An error occurred while loading the employees. Please try again.",
+    "dictionariesLoadFailed": "Failed to load dictionaries",
+    "dictionariesLoadFailedMessage": "An error occurred while loading the dictionaries. Please try again.",
+    "statisticsLoadFailed": "Failed to load statistics",
+    "statisticsLoadFailedMessage": "An error occurred while loading the statistics. Please try again."
   },
   "auth": {
     "login": "Login",
@@ -92,6 +107,11 @@
     "menuType": "Menu Type",
     "integrationType": "Integration Type",
     "adminEmail": "Admin Email",
+    "adminUsername": "Admin Username",
+    "adminPassword": "Admin Password",
+    "changeAdminPassword": "Change Admin Password",
+    "legalAddress": "Legal Address",
+    "tin": "TIN",
     "fields": {
       "name": "Restaurant",
       "city": "City",
@@ -118,6 +138,7 @@
     "lastRestaurantActivity": "Last Restaurant Activity",
     "statistics": "Statistics",
     "configurationErrors": "Configuration Errors",
+    "qrCode": "QR Code",
     "qrCodes": "QR Codes",
     "qrCodesTitle": "QR Codes - {{name}}",
     "addQRCodes": "Add QR Codes",
@@ -129,6 +150,14 @@
     "unblockQRTitle": "Unblock QR code?",
     "blockQRMessage": "Are you sure you want to block QR code {{qrText}}?",
     "unblockQRMessage": "Are you sure you want to unblock QR code {{qrText}}?",
+    "changeQRTypeTitle": "Change QR type?",
+    "changeQRTypeMessage": "Are you sure you want to change QR code {{qrText}} to {{type}}?",
+    "type": "Type",
+    "static": "Static",
+    "dynamic": "Dynamic",
+    "assigned": "Assigned",
+    "assignedFilter": "Assigned",
+    "unassignedFilter": "Unassigned",
     "searchPlaceholder": "Search by ID or name...",
     "blockConfirmTitle": "Block restaurant?",
     "unblockConfirmTitle": "Unblock restaurant?",
@@ -185,7 +214,10 @@
     "passwordRequired": "Password is required",
     "quantityRequired": "Quantity is required",
     "quantityMin": "Minimum 1",
-    "quantityMax": "Maximum 100"
+    "quantityMax": "Maximum 100",
+    "typeRequired": "Type is required",
+    "legalAddressRequired": "Legal address is required",
+    "tinRequired": "TIN is required"
   },
   "pagination": {
     "rowsPerPage": "Rows per page:",
@@ -218,6 +250,10 @@
   "dictionaries": {
     "addEntry": "Add Entry",
     "name": "Name",
+    "nameArmenian": "Name (Armenian)",
+    "nameRussian": "Name (Russian)",
+    "nameEnglish": "Name (English)",
+    "description": "Description",
     "country": "Country",
     "city": "City",
     "rotation": "Rotation (seconds)",

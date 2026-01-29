@@ -23,7 +23,6 @@ import {
   Restaurant as RestaurantIcon,
   Book as BookIcon,
   BarChart as BarChartIcon,
-  Campaign as CampaignIcon,
   ExpandLess,
   ExpandMore,
   Logout as LogoutIcon,
@@ -53,18 +52,11 @@ const getMenuItems = (): MenuItem[] => [
     labelKey: 'menu.dictionaries',
     icon: <BookIcon />,
     children: [
-      { id: 'placements', labelKey: 'menu.placements', icon: null, path: '/dictionaries/placements' },
-      { id: 'schedules', labelKey: 'menu.schedules', icon: null, path: '/schedules' },
-    ],
-  },
-  {
-    id: 'advertisement',
-    labelKey: 'menu.advertisement',
-    icon: <CampaignIcon />,
-    children: [
-      { id: 'advertisers', labelKey: 'menu.advertisers', icon: null, path: '/advertisers' },
-      { id: 'campaigns', labelKey: 'menu.campaigns', icon: null, path: '/campaigns' },
-      { id: 'creatives', labelKey: 'menu.creatives', icon: null, path: '/creatives' },
+      { id: 'employees', labelKey: 'menu.employees', icon: null, path: '/employees' },
+      { id: 'restaurant-types', labelKey: 'menu.restaurantTypes', icon: null, path: '/dictionaries/restaurant-types' },
+      { id: 'menu-types', labelKey: 'menu.menuTypes', icon: null, path: '/dictionaries/menu-types' },
+      { id: 'price-segments', labelKey: 'menu.priceSegments', icon: null, path: '/dictionaries/price-segments' },
+      { id: 'integration-types', labelKey: 'menu.integrationTypes', icon: null, path: '/dictionaries/integration-types' },
     ],
   },
   {
@@ -171,10 +163,15 @@ export const MainLayout = () => {
 
   const drawer = (
     <Box>
-      <Toolbar sx={{ justifyContent: 'left', gap: 1 }}>
-        <Box component="img" src="/logo.svg" alt="Logo" sx={{ width: 128, height: 128 }} />
+      <Toolbar sx={{ justifyContent: 'center', gap: 1 }}>
+        <Box
+          component="img"
+          src="/logo.svg"
+          alt="TRIO Admin Logo"
+          sx={{ height: 32, width: 'auto' }}
+        />
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Ads Server
+          TRIO Admin
         </Typography>
       </Toolbar>
       <Divider />

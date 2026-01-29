@@ -1,9 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
-  TextField,
+  TextField as MuiTextField,
   Button,
   Typography,
   Alert,
@@ -14,11 +14,12 @@ import {
 } from '@mui/material';
 import { Language as LanguageIcon } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
+import TextField from '../../components/ui/atoms/TextField';
 
 const languages = [
-  { code: 'hy', name: 'Հայերեն', flag: '🇦🇲' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'hy', name: 'Հայերեն', flag: '\u{1F1FA}\u{1F1F8}' },
+  { code: 'ru', name: 'Русский', flag: '\u{1F1F7}\u{1F1FA}' },
+  { code: 'en', name: 'English', flag: '\u{1F1FA}\u{1F1F8}' },
 ];
 
 export const LoginPage = () => {
@@ -119,7 +120,7 @@ export const LoginPage = () => {
 
           {/* Login Form */}
           <Box component="form" onSubmit={handleSubmit} noValidate>
-            <TextField
+            <MuiTextField
               margin="normal"
               required
               fullWidth
@@ -133,20 +134,18 @@ export const LoginPage = () => {
               disabled={isLoading}
               sx={{ mb: 2 }}
             />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label={t('auth.password')}
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-              sx={{ mb: 1 }}
-            />
+            <Box sx={{ mb: 1 }}>
+              <TextField
+                name="password"
+                label={t('auth.password')}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+                required
+                fullWidth
+              />
+            </Box>
 
             <Button
               type="submit"
@@ -163,32 +162,6 @@ export const LoginPage = () => {
             >
               {isLoading ? t('common.loading') : t('auth.signIn')}
             </Button>
-
-            {/* Demo Credentials */}
-            <Box
-              sx={{
-                mt: 3,
-                p: 2,
-                bgcolor: 'grey.50',
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'grey.200',
-              }}
-            >
-              <Typography
-                variant="caption"
-                display="block"
-                sx={{ fontWeight: 600, mb: 0.5, color: 'text.primary' }}
-              >
-                Demo credentials:
-              </Typography>
-              <Typography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
-                Username: admin
-              </Typography>
-              <Typography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
-                Password: admin123
-              </Typography>
-            </Box>
           </Box>
 
           {/* Language Selector */}

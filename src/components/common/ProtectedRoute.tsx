@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuthStore } from '../../store/authStore';
@@ -9,13 +9,19 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    // Only check auth if we're not already authenticated
+    if (!isAuthenticated && !user) {
+      checkAuth().finally(() => setIsChecking(false));
+    } else {
+      setIsChecking(false);
+    }
+  }, []);
 
-  if (isLoading) {
+  if (isLoading || isChecking) {
     return (
       <Box
         sx={{
