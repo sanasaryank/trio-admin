@@ -308,7 +308,7 @@ API layer abstracts data access:
 ```
 1. User submits login form
    ↓
-2. POST /admin/auth/login with Basic Auth
+2. POST {baseUrl}/auth/login with Basic Auth (baseUrl from VITE_API_BASE_URL)
    ↓
 3. Server validates and sets HttpOnly cookie "admin_token"
    ↓
@@ -320,7 +320,7 @@ API layer abstracts data access:
    ↓
 7. All subsequent requests include cookie automatically
    ↓
-8. On page load, call GET /admin/auth/me to restore session
+8. On page load, call GET {baseUrl}/auth/me to restore session
 ```
 
 ### Data Flow
@@ -361,26 +361,31 @@ See [docs/API.md](./docs/API.md) for complete API reference.
 - Cookie automatically included in all requests via `credentials: 'include'`
 - No manual token management required
 
-### Base URL
-```
-Development: https://admin.trio.am
-Production: https://api.getmenu.am
-```
+### Base URL (VITE_API_BASE_URL)
+
+No `/admin/` prefix. Paths are relative to base URL:
+
+| Environment | Base URL |
+|-------------|---------|
+| Dev | `https://api.trio.am/dev` |
+| Stage | `https://api.trio.am/stage` |
+| Production | `https://api.trio.am` |
 
 ### Key Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/admin/auth/login` | POST | Login with Basic Auth |
-| `/admin/auth/me` | GET | Get current user |
-| `/admin/auth/logout` | POST | Logout and clear cookie |
-| `/admin/employees` | GET | List employees |
-| `/admin/employees` | POST | Create employee |
-| `/admin/employees/{id}` | PUT | Update employee |
-| `/admin/restaurants` | GET | List restaurants |
-| `/admin/restaurants` | POST | Create restaurant |
-| `/admin/dictionaries/{key}` | GET | Get dictionary items |
-| `/admin/audit` | GET | Get audit logs |
+| `/auth/login` | POST | Login with Basic Auth |
+| `/auth/me` | GET | Get current user |
+| `/auth/logout` | POST | Logout and clear cookie |
+| `/employees` | GET | List employees |
+| `/employees` | POST | Create employee |
+| `/employees/{id}` | PUT | Update employee |
+| `/restaurants` | GET | List restaurants |
+| `/restaurants` | POST | Create restaurant |
+| `/dictionaries/{key}` | GET | Get dictionary items |
+| `/locations` | GET | List locations |
+| Audit | (see docs/API.md) | Audit log endpoints |
 
 ### Request/Response Format
 
@@ -598,7 +603,7 @@ npm run preview
 ### Build Output
 
 ```
-dist/
+out/
 ├── assets/
 │   ├── index-[hash].js
 │   ├── index-[hash].css
@@ -611,8 +616,7 @@ dist/
 **Production .env**
 ```env
 VITE_APP_MODE=production
-VITE_API_BASE_URL=https://api.getmenu.am
-VITE_USE_MOCK_API=false
+VITE_API_BASE_URL=https://api.trio.am
 VITE_DEBUG_MODE=false
 VITE_LOG_LEVEL=error
 ```

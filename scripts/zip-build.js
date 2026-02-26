@@ -35,6 +35,7 @@ try {
     execSync(`zip -r "${zipPath}" out`, { stdio: 'inherit', cwd: root });
   }
   console.log(`Created ${zipName}`);
+  console.log(`Path: ${zipPath}`);
 } catch (err) {
   console.error('Zip failed:', err.message);
   process.exit(1);

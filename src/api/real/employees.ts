@@ -2,7 +2,7 @@ import type { Employee, EmployeeFormData } from '../../types';
 import { realApiFetch } from './client';
 import { env } from '../../config/env';
 
-const EMPLOYEES_BASE_URL = `${env.apiBaseUrl}/admin/employees`;
+const EMPLOYEES_BASE_URL = `${env.apiBaseUrl}/employees`;
 
 export const realEmployeesApi = {
   list: async (): Promise<Employee[]> => {

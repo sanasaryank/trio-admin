@@ -2,7 +2,7 @@ import type { DictionaryKey, DictionaryItemType, DictionaryFormData } from '../.
 import { realApiFetch } from './client';
 import { env } from '../../config/env';
 
-const DICTIONARIES_BASE_URL = `${env.apiBaseUrl}/admin/dictionaries`;
+const DICTIONARIES_BASE_URL = `${env.apiBaseUrl}/dictionaries`;
 
 export const realDictionariesApi = {
   list: async (dictKey: DictionaryKey): Promise<DictionaryItemType[]> => {
