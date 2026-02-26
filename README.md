@@ -363,7 +363,7 @@ See [docs/API.md](./docs/API.md) for complete API reference.
 
 ### Base URL
 ```
-Development: https://dev.getmenu.am
+Development: https://admin.trio.am
 Production: https://api.getmenu.am
 ```
 

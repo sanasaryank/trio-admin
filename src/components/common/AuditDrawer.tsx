@@ -53,7 +53,7 @@ export const AuditDrawer = ({
     try {
       const data = await auditApi.getEvents({
         entityType,
-        entityId,
+        entityId: entityId != null ? String(entityId) : undefined,
       });
 
       // Sort by timestamp (newest first)

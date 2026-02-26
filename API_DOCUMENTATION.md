@@ -10,7 +10,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ## Authentication Endpoints
 
 ### 1. Login
-**Endpoint:** `POST https://dev.getmenu.am/admin/auth/login`
+**Endpoint:** `POST https://admin.trio.am/admin/auth/login`
 
 **Authentication:** Basic Auth (username:password in Authorization header)
 
@@ -40,7 +40,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 - `admin_token` - HttpOnly, Secure, SameSite=Strict
 
 ### 2. Get Current User
-**Endpoint:** `GET https://dev.getmenu.am/admin/auth/me`
+**Endpoint:** `GET https://admin.trio.am/admin/auth/me`
 
 **Authentication:** Cookie (admin_token automatically sent)
 
@@ -56,7 +56,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 3. Logout
-**Endpoint:** `POST https://dev.getmenu.am/admin/auth/logout`
+**Endpoint:** `POST https://admin.trio.am/admin/auth/logout`
 
 **Authentication:** Bearer Token
 

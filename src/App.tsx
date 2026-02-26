@@ -54,7 +54,7 @@ function App() {
           }}
           autoHideDuration={3000}
         >
-          <BrowserRouter>
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />

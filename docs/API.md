@@ -21,7 +21,7 @@ Complete API reference for the Trio SuperAdmin application.
 
 | Environment | URL |
 |-------------|-----|
-| Development | `https://dev.getmenu.am` |
+| Development | `https://admin.trio.am` |
 | Production  | `https://api.getmenu.am` |
 
 ### Request Format
@@ -62,7 +62,7 @@ Authenticate user and receive HttpOnly cookie.
 **Request:**
 ```http
 POST /admin/auth/login HTTP/1.1
-Host: dev.getmenu.am
+Host: admin.trio.am
 Authorization: Basic YWRtaW46cGFzc3dvcmQ=
 Content-Type: application/json
 ```
@@ -97,7 +97,7 @@ Get authenticated user information.
 **Request:**
 ```http
 GET /admin/auth/me HTTP/1.1
-Host: dev.getmenu.am
+Host: admin.trio.am
 Cookie: admin_token=...
 ```
 
@@ -128,7 +128,7 @@ Clear authentication session.
 **Request:**
 ```http
 POST /admin/auth/logout HTTP/1.1
-Host: dev.getmenu.am
+Host: admin.trio.am
 Cookie: admin_token=...
 ```
 
@@ -160,7 +160,7 @@ None (filtering done client-side)
 **Request:**
 ```http
 GET /admin/employees HTTP/1.1
-Host: dev.getmenu.am
+Host: admin.trio.am
 Cookie: admin_token=...
 ```
 
@@ -205,7 +205,7 @@ Get single employee details.
 **Request:**
 ```http
 GET /admin/employees/emp1 HTTP/1.1
-Host: dev.getmenu.am
+Host: admin.trio.am
 Cookie: admin_token=...
 ```
 
@@ -690,7 +690,7 @@ Get items from a specific dictionary.
 **Request:**
 ```http
 GET /admin/dictionaries/restaurant-types HTTP/1.1
-Host: dev.getmenu.am
+Host: admin.trio.am
 Cookie: admin_token=...
 ```
 
@@ -854,7 +854,7 @@ Get audit log events with filtering.
 **Request:**
 ```http
 GET /admin/audit?startDate=1705622400&action=create&limit=50 HTTP/1.1
-Host: dev.getmenu.am
+Host: admin.trio.am
 Cookie: admin_token=...
 ```
 

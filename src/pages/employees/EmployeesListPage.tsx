@@ -29,7 +29,6 @@ import {
   useBlockToggle,
 } from '../../hooks';
 import { getStatusFilterOptions } from '../../utils/filterUtils';
-import { logger } from '../../utils/logger';
 import type { Employee, EmployeeFilters } from '../../types';
 
 interface FormDialogState {
