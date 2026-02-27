@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useSnackbar } from 'notistack';
 import { Box, Typography, Alert } from '@mui/material';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import { Add as AddIcon, Edit as EditIcon, FilterList as FilterListIcon } from '@mui/icons-material';
 import { dictionariesApi } from '../../api/endpoints';
 import { getDictionaryTitle } from '../../utils/dictionaryUtils';
@@ -44,7 +44,7 @@ import { DictionaryFormDialog } from '../../components/dictionaries/DictionaryFo
 export const DictionariesPage = () => {
   const { dictKey } = useParams<{ dictKey: DictionaryKey }>();
   const { t, i18n } = useTranslation();
-  const { enqueueSnackbar } = useSnackbar();
+  const { showError, showSuccess } = useAppSnackbar();
 
   // State for items and related data
   const [items, setItems] = useState<DictionaryItemType[]>([]);
@@ -75,6 +75,10 @@ export const DictionariesPage = () => {
     },
     [dictKey]
   );
+
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
 
   // Fetch countries for cities view
   const { data: countries } = useFetch<Country[]>(
@@ -189,7 +193,7 @@ export const DictionariesPage = () => {
     },
     onSuccess: async () => {
       await loadData();
-      enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
+      showSuccess(t('common.updatedSuccessfully'));
     },
     getItemName: getDisplayName,
     translationKeys: {
@@ -290,8 +294,6 @@ export const DictionariesPage = () => {
     );
   }
 
-  const error = fetchError?.message || null;
-
   return (
     <Box>
       {/* Header */}
@@ -310,13 +312,6 @@ export const DictionariesPage = () => {
           </Button>
         </Box>
       </Box>
-
-      {/* Error Alert */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
 
       {/* Data Table */}
       <DataTable

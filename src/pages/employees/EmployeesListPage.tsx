@@ -1,7 +1,7 @@
-import { useMemo, useCallback, useState, useRef } from 'react';
+import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSnackbar } from 'notistack';
-import { Box, Typography, Alert } from '@mui/material';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
+import { Box, Typography } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -39,7 +39,7 @@ interface FormDialogState {
 
 export const EmployeesListPage = () => {
   const { t } = useTranslation();
-  const { enqueueSnackbar } = useSnackbar();
+  const { showError, showSuccess } = useAppSnackbar();
 
   // Form dialog state
   const [formDialog, setFormDialog] = useState<FormDialogState>({
@@ -56,6 +56,10 @@ export const EmployeesListPage = () => {
     error: fetchError,
     refetch: loadEmployees,
   } = useFetch<Employee[]>(async () => await employeesApi.list(), []);
+
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
 
   // Filters management
   const {
@@ -120,7 +124,7 @@ export const EmployeesListPage = () => {
     blockApi: (id, isBlocked) => employeesApi.block(id, isBlocked),
     onSuccess: async () => {
       await loadEmployees();
-      enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
+      showSuccess(t('common.updatedSuccessfully'));
     },
     getItemName: getFullName,
     translationKeys: {
@@ -253,13 +257,6 @@ export const EmployeesListPage = () => {
           </Button>
         </Box>
       </Box>
-
-      {/* Error Alert */}
-      {fetchError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {fetchError.message}
-        </Alert>
-      )}
 
       {/* Data Table */}
       <DataTable

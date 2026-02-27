@@ -16,6 +16,8 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { auditApi } from '../../api/endpoints';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
+import { getErrorMessage } from '../../api/errors';
 import { formatTimestamp } from '../../utils/dateUtils';
 import type { AuditEvent, AuditEntityType } from '../../types';
 
@@ -36,13 +38,12 @@ export const AuditDrawer = ({
 }: AuditDrawerProps) => {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { showError } = useAppSnackbar();
 
   const loadAuditEvents = useCallback(async () => {
     if (!entityId) return;
 
     setIsLoading(true);
-    setError(null);
 
     try {
       const data = await auditApi.getEvents({
@@ -53,11 +54,11 @@ export const AuditDrawer = ({
       const sortedData = [...data].sort((a, b) => b.timestamp - a.timestamp);
       setEvents(sortedData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+      showError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
-  }, [entityType, entityId]);
+  }, [entityType, entityId, showError]);
 
   useEffect(() => {
     if (open && entityId) {
@@ -126,17 +127,11 @@ export const AuditDrawer = ({
           </Box>
         )}
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {!isLoading && !error && events.length === 0 && (
+        {!isLoading && events.length === 0 && (
           <Alert severity="info">Нет записей в журнале</Alert>
         )}
 
-        {!isLoading && !error && events.length > 0 && (
+        {!isLoading && events.length > 0 && (
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
               <TableHead>

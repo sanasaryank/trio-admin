@@ -16,6 +16,11 @@ export interface UseFormSubmitReturn<T> {
   ) => Promise<void>;
 }
 
+export interface UseFormSubmitOptions {
+  /** Called when submit fails with the error message (e.g. to show toast) */
+  onError?: (message: string) => void;
+}
+
 /**
  * Hook for handling form submission with loading and error states
  *
@@ -24,28 +29,12 @@ export interface UseFormSubmitReturn<T> {
  *
  * @example
  * ```tsx
- * interface FormData {
- *   name: string;
- *   email: string;
- * }
- *
- * const { isSubmitting, error, handleSubmit } = useFormSubmit<FormData>();
- *
- * const onSubmit = async (data: FormData) => {
- *   await handleSubmit(
- *     data,
- *     async (formData) => {
- *       await api.createUser(formData);
- *     },
- *     () => {
- *       console.log('Success!');
- *       navigate('/users');
- *     }
- *   );
- * };
+ * const { showError } = useAppSnackbar();
+ * const { isSubmitting, error, handleSubmit } = useFormSubmit<FormData>({ onError: showError });
  * ```
  */
-function useFormSubmit<T>(): UseFormSubmitReturn<T> {
+function useFormSubmit<T>(options?: UseFormSubmitOptions): UseFormSubmitReturn<T> {
+  const { onError } = options ?? {};
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,12 +55,13 @@ function useFormSubmit<T>(): UseFormSubmitReturn<T> {
         const errorMessage =
           err instanceof Error ? err.message : 'An error occurred during submission';
         setError(errorMessage);
+        onError?.(errorMessage);
         throw err; // Re-throw to allow caller to handle if needed
       } finally {
         setIsSubmitting(false);
       }
     },
-    []
+    [onError]
   );
 
   return {

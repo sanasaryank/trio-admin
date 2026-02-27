@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Box, Paper, Typography, Alert, Divider, Grid, InputAdornment } from '@mui/material';
+import { Box, Paper, Typography, Divider, Grid, InputAdornment } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 // API
@@ -28,6 +28,7 @@ import { useFetch, useFormSubmit, useRestaurantDictionaries } from '../../hooks'
 // Utils
 import { logger } from '../../utils/logger';
 import { scrollToFirstError } from '../../utils/scrollToFirstError';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import { getDisplayName } from '../../utils/dictionaryUtils';
 
 const createRestaurantSchema = (t: (key: string) => string) => z.object({
@@ -113,8 +114,8 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
   const prevCityIdRef = useRef<string>('');
   const restaurantHashRef = useRef<string | undefined>(undefined);
 
-  // Form submission hook
-  const { isSubmitting, error: submitError, handleSubmit: handleFormSubmit } = useFormSubmit<RestaurantFormValues>();
+  const { showError } = useAppSnackbar();
+  const { isSubmitting, handleSubmit: handleFormSubmit } = useFormSubmit<RestaurantFormValues>({ onError: showError });
 
   // Create schema with translations
   const restaurantSchema = useMemo(() => createRestaurantSchema(t), [t]);
@@ -438,6 +439,10 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
     }
   }, [isDialog, isSubmitting]);
 
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
+
   // Prepare select options
   const countryOptions = useMemo(
     () => [
@@ -485,15 +490,15 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
   );
 
   const integrationTypeOptions = useMemo(
-    () => [
-      { value: '', label: t('restaurants.selectType') },
-      ...integrationTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
-    ],
-    [integrationTypes, t]
+    () =>
+      integrationTypes.map((type) => ({
+        value: String(type.id),
+        label: getDisplayName(type.name),
+      })),
+    [integrationTypes]
   );
 
   const isLoading = isFetchingRestaurant || isFetchingDictionaries;
-  const error = fetchError?.message || submitError;
 
   if (isLoading) {
     return <LoadingOverlay loading={true} message={t('common.loadingData')} />;
@@ -501,12 +506,6 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
 
   const formContent = (
     <>
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
       <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
           <Typography variant="h6" gutterBottom>
             {t('restaurants.basicInfo')}

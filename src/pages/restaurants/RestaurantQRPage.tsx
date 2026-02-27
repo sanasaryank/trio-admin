@@ -1,10 +1,10 @@
-import { useMemo, useCallback, useRef } from 'react';
+import { useMemo, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Alert } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { ArrowBack as ArrowBackIcon, Add as AddIcon, FilterList as FilterListIcon } from '@mui/icons-material';
 import { QRCodeCanvas } from 'qrcode.react';
 
@@ -37,6 +37,8 @@ import {
 } from '../../hooks';
 import { logger } from '../../utils/logger';
 import { scrollToFirstError } from '../../utils/scrollToFirstError';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
+import { getErrorMessage } from '../../api/errors';
 import { getDisplayName } from '../../utils/dictionaryUtils';
 import { getStatusFilterOptions } from '../../utils/filterUtils';
 
@@ -130,6 +132,7 @@ export const RestaurantQRPage = () => {
   const filterDrawer = useDrawer();
 
   // Create dialog
+  const { showError } = useAppSnackbar();
   const [createDialogOpen, toggleCreateDialog] = useToggle(false);
   const createQRFormRef = useRef<HTMLFormElement>(null);
   const createDialogContentRef = useRef<HTMLDivElement>(null);
@@ -281,10 +284,10 @@ export const RestaurantQRPage = () => {
         tableState.handlePageChange(0);
       } catch (err) {
         logger.error('Error creating QR codes', err as Error, { restaurantId: id, quantity: data.quantity });
-        alert(t('common.error') + ': ' + (err as Error).message);
+        showError(getErrorMessage(err));
       }
     },
-    [id, loadQRCodes, handleCloseCreateDialog, tableState, t]
+    [id, loadQRCodes, handleCloseCreateDialog, tableState, showError]
   );
 
   const handleTypeChange = useCallback(
@@ -301,12 +304,12 @@ export const RestaurantQRPage = () => {
             await loadQRCodes();
           } catch (err) {
             logger.error('Error changing QR type', err as Error, { restaurantId: id, qrId: qr.id });
-            alert(t('common.error') + ': ' + (err as Error).message);
+            showError(getErrorMessage(err));
           }
         },
       });
     },
-    [confirmDialog, id, loadQRCodes, t]
+    [confirmDialog, id, loadQRCodes, showError]
   );
 
   const handleBack = useCallback(() => {
@@ -428,8 +431,11 @@ export const RestaurantQRPage = () => {
     [handleBlockToggle, handleTypeChange, t]
   );
 
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
+
   const isLoading = isLoadingRestaurant || isLoadingQRCodes;
-  const error = fetchError?.message || null;
   const restaurantName = restaurant?.name 
     ? (typeof restaurant.name === 'string' ? restaurant.name : getDisplayName(restaurant.name))
     : '';
@@ -454,12 +460,6 @@ export const RestaurantQRPage = () => {
           </Button>
         </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
 
       <DataTable
         columns={columns}

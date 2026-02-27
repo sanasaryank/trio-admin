@@ -4,13 +4,14 @@ import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { Box, Paper, Typography, Alert, CircularProgress } from '@mui/material';
+import { Box, Paper, Typography, CircularProgress } from '@mui/material';
 import { employeesApi } from '../../api/endpoints';
 import { FormField } from '../../components/ui/molecules';
 import { Button } from '../../components/ui/atoms';
 import { useFormSubmit, useFetch } from '../../hooks';
 import { logger } from '../../utils/logger';
 import { scrollToFirstError } from '../../utils/scrollToFirstError';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import type { EmployeeFormData, Employee } from '../../types';
 
 const createEmployeeSchema = (t: (key: string) => string) => z.object({
@@ -106,8 +107,9 @@ export const EmployeeFormPage = forwardRef<EmployeeFormHandle, EmployeeFormPageP
     }
   }, [employeeData, reset]);
 
-  const { isSubmitting, error: submitError, handleSubmit: handleFormSubmit } =
-    useFormSubmit<EmployeeFormValues>();
+  const { showError } = useAppSnackbar();
+  const { isSubmitting, handleSubmit: handleFormSubmit } =
+    useFormSubmit<EmployeeFormValues>({ onError: showError });
 
   const onSubmit = useCallback(
     async (data: EmployeeFormValues) => {
@@ -181,6 +183,10 @@ export const EmployeeFormPage = forwardRef<EmployeeFormHandle, EmployeeFormPageP
     }
   }, [isDialog, isSubmitting]);
 
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
+
   if (isFetching) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -189,16 +195,8 @@ export const EmployeeFormPage = forwardRef<EmployeeFormHandle, EmployeeFormPageP
     );
   }
 
-  const error = fetchError || submitError;
-
   const formContent = (
     <>
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error instanceof Error ? error.message : error}
-        </Alert>
-      )}
-
       <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate sx={{ mt: isDialog ? 3 : 0 }}>
         <Box sx={{ mb: 2 }}>
           <FormField

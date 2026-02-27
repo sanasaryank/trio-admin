@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Alert, CircularProgress, InputAdornment, Typography } from '@mui/material';
+import { Box, CircularProgress, InputAdornment, Typography } from '@mui/material';
 import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { useSnackbar } from 'notistack';
 import { dictionariesApi } from '../../api/endpoints';
+import { getErrorMessage } from '../../api/errors';
 import { logger } from '../../utils/logger';
 import { getDictionaryFieldsConfig } from '../../utils/dictionaryUtils';
 import type { DictionaryKey, DictionaryFormData, Country, City, District, Placement } from '../../types';
@@ -16,6 +16,7 @@ import Select from '../ui/atoms/Select';
 import { FormDialogLayout } from '../ui/molecules/FormDialogLayout';
 import useFetch from '../../hooks/useFetch';
 import { scrollToFirstError } from '../../utils/scrollToFirstError';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 
 interface DictionaryFormDialogProps {
   open: boolean;
@@ -76,12 +77,11 @@ export const DictionaryFormDialog = ({
   onSave,
 }: DictionaryFormDialogProps) => {
   const { t } = useTranslation();
-  const { enqueueSnackbar } = useSnackbar();
+  const { showError, showSuccess } = useAppSnackbar();
   const isEditMode = itemId !== undefined;
   const config = useMemo(() => getDictionaryFieldsConfig(dictKey), [dictKey]);
   const isGeographicData = ['countries', 'cities', 'districts'].includes(dictKey);
 
-  const [error, setError] = useState<string | null>(null);
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null);
   const dialogContentRef = useRef<HTMLDivElement>(null);
 
@@ -154,7 +154,6 @@ export const DictionaryFormDialog = ({
   useEffect(() => {
     if (!open) {
       reset();
-      setError(null);
       setSelectedCountryId(null);
     } else if (!isEditMode) {
       // Reset to default values when opening in create mode
@@ -252,20 +251,19 @@ export const DictionaryFormDialog = ({
 
         if (isEditMode) {
           await dictionariesApi.update(dictKey, itemId, formData as unknown as DictionaryFormData);
-          enqueueSnackbar(t('common.savedSuccessfully'), { variant: 'success' });
+          showSuccess(t('common.savedSuccessfully'));
         } else {
           await dictionariesApi.create(dictKey, formData as unknown as DictionaryFormData);
-          enqueueSnackbar(t('common.createdSuccessfully'), { variant: 'success' });
+          showSuccess(t('common.createdSuccessfully'));
         }
 
         onSave();
         onClose();
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('common.error'));
-        enqueueSnackbar(t('common.error'), { variant: 'error' });
+        showError(getErrorMessage(err));
       }
     },
-    [config, isEditMode, dictKey, itemId, onSave, onClose, t, enqueueSnackbar, isGeographicData, itemData]
+    [config, isEditMode, dictKey, itemId, onSave, onClose, t, showError, showSuccess, isGeographicData, itemData]
   );
 
   // Country change handler for districts
@@ -346,13 +344,7 @@ export const DictionaryFormDialog = ({
       aria-labelledby="dictionary-form-dialog-title"
       contentRef={dialogContentRef}
     >
-      {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {isLoading ? (
+      {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
           </Box>
