@@ -6,16 +6,16 @@ Complete API reference for the Trio SuperAdmin application.
 For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 
 **Base URLs (no `/admin/` prefix):**
-- Dev: `https://api.trio.am/dev` → e.g. `POST https://api.trio.am/dev/auth/login`
-- Stage: `https://api.trio.am/stage` → e.g. `POST https://api.trio.am/stage/auth/login`
-- Production: `https://api.trio.am` → e.g. `POST https://api.trio.am/auth/login`
+- Dev: `https://api.trio.am/dev` → e.g. `POST https://api.trio.am/dev/login`
+- Stage: `https://api.trio.am/stage` → e.g. `POST https://api.trio.am/stage/login`
+- Production: `https://api.trio.am` → e.g. `POST https://api.trio.am/login`
 
 ---
 
 ## Authentication Endpoints
 
 ### 1. Login
-**Endpoint:** `POST {baseUrl}/auth/login` (e.g. `POST https://api.trio.am/dev/auth/login`)
+**Endpoint:** `POST {baseUrl}/login` (e.g. `POST https://api.trio.am/dev/login`)
 
 **Authentication:** Basic Auth (username:password in Authorization header)
 
@@ -45,7 +45,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 - `admin_token` - HttpOnly, Secure, SameSite=Strict
 
 ### 2. Get Current User
-**Endpoint:** `GET {baseUrl}/auth/me` (e.g. `GET https://api.trio.am/dev/auth/me`)
+**Endpoint:** `GET {baseUrl}/me` (e.g. `GET https://api.trio.am/dev/me`)
 
 **Authentication:** Cookie (admin_token automatically sent)
 
@@ -61,7 +61,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 3. Logout
-**Endpoint:** `POST {baseUrl}/auth/logout` (e.g. `POST https://api.trio.am/dev/auth/logout`)
+**Endpoint:** `POST {baseUrl}/logout` (e.g. `POST https://api.trio.am/dev/logout`)
 
 **Authentication:** Bearer Token
 
