@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Alert } from '@mui/material';
@@ -54,6 +54,7 @@ import type {
   RestaurantListItem,
   RestaurantFilters,
 } from '../../types';
+import type { RestaurantFormHandle } from './RestaurantFormPage';
 
 type SortField =
   | 'id'
@@ -80,6 +81,8 @@ export const RestaurantsListPage = () => {
     open: false,
     restaurantId: undefined,
   });
+  const formRef = useRef<RestaurantFormHandle | null>(null);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   // Fetch restaurants
   const {
@@ -678,6 +681,9 @@ export const RestaurantsListPage = () => {
         open={formDialog.open}
         onClose={handleCloseFormDialog}
         restaurantId={formDialog.restaurantId}
+        formRef={formRef}
+        isSubmitting={isFormSubmitting}
+        onSubmittingChange={setIsFormSubmitting}
       />
     </Box>
   );

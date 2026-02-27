@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Drawer,
   Box,
@@ -38,13 +38,7 @@ export const AuditDrawer = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open && entityId) {
-      loadAuditEvents();
-    }
-  }, [open, entityType, entityId]);
-
-  const loadAuditEvents = async () => {
+  const loadAuditEvents = useCallback(async () => {
     if (!entityId) return;
 
     setIsLoading(true);
@@ -56,7 +50,6 @@ export const AuditDrawer = ({
         entityId: entityId != null ? String(entityId) : undefined,
       });
 
-      // Sort by timestamp (newest first)
       const sortedData = [...data].sort((a, b) => b.timestamp - a.timestamp);
       setEvents(sortedData);
     } catch (err) {
@@ -64,7 +57,13 @@ export const AuditDrawer = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [entityType, entityId]);
+
+  useEffect(() => {
+    if (open && entityId) {
+      loadAuditEvents();
+    }
+  }, [open, entityId, loadAuditEvents]);
 
   const getActionLabel = (action: string): string => {
     const labels: Record<string, string> = {
@@ -85,35 +84,16 @@ export const AuditDrawer = ({
     const parts: string[] = [];
     const metadata = event.metadata;
 
-    // Common fields
-    if (metadata.name) {
-      parts.push(`Название: ${metadata.name}`);
-    }
-    if (metadata.firstName) {
-      parts.push(`Имя: ${metadata.firstName}`);
-    }
-    if (metadata.lastName) {
-      parts.push(`Фамилия: ${metadata.lastName}`);
-    }
+    if (metadata.name) parts.push(`Название: ${metadata.name}`);
+    if (metadata.firstName) parts.push(`Имя: ${metadata.firstName}`);
+    if (metadata.lastName) parts.push(`Фамилия: ${metadata.lastName}`);
     if (metadata.blocked !== undefined) {
       parts.push(`Статус: ${metadata.blocked ? 'Заблокирован' : 'Активен'}`);
     }
-
-    // Restaurant-specific fields
-    if (metadata.cityId) {
-      parts.push(`ID города: ${metadata.cityId}`);
-    }
-    if (metadata.adminEmail) {
-      parts.push(`Email: ${metadata.adminEmail}`);
-    }
-
-    // QR-specific fields
-    if (metadata.count) {
-      parts.push(`Количество: ${metadata.count}`);
-    }
-    if (metadata.qrText) {
-      parts.push(`QR текст: ${metadata.qrText}`);
-    }
+    if (metadata.cityId) parts.push(`ID города: ${metadata.cityId}`);
+    if (metadata.adminEmail) parts.push(`Email: ${metadata.adminEmail}`);
+    if (metadata.count) parts.push(`Количество: ${metadata.count}`);
+    if (metadata.qrText) parts.push(`QR текст: ${metadata.qrText}`);
 
     return parts.length > 0 ? parts.join(', ') : '-';
   };
@@ -124,19 +104,22 @@ export const AuditDrawer = ({
       open={open}
       onClose={onClose}
       PaperProps={{
-        sx: { width: { xs: '100%', sm: 600 } },
+        sx: {
+          width: { xs: '100%', sm: 600 },
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+        },
       }}
     >
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6">
-            Журнал действий: {entityLabel}
-          </Typography>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
+      <Box sx={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Typography variant="h6">Журнал действий: {entityLabel}</Typography>
+        <IconButton onClick={onClose} aria-label="close">
+          <CloseIcon />
+        </IconButton>
+      </Box>
 
+      <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
         {isLoading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
@@ -150,9 +133,7 @@ export const AuditDrawer = ({
         )}
 
         {!isLoading && !error && events.length === 0 && (
-          <Alert severity="info">
-            Нет записей в журнале
-          </Alert>
+          <Alert severity="info">Нет записей в журнале</Alert>
         )}
 
         {!isLoading && !error && events.length > 0 && (

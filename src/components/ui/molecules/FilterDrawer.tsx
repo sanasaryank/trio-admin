@@ -1,11 +1,5 @@
 import React, { type ReactNode } from 'react';
-import {
-  Drawer,
-  Box,
-  Typography,
-  Divider,
-  Stack,
-} from '@mui/material';
+import { Drawer, Box, Typography, Stack } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import Button from '../atoms/Button';
 
@@ -94,30 +88,17 @@ const FilterDrawer: React.FC<FilterDrawerProps> = React.memo(({
           flexDirection: 'column',
         }}
       >
-        {/* Заголовок */}
-        <Box p={2}>
+        <Box sx={{ flexShrink: 0, p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h6">{title || t('common.filters')}</Typography>
         </Box>
 
-        <Divider />
-
-        {/* Содержимое фильтров */}
-        <Box
-          sx={{
-            flex: 1,
-            overflow: 'auto',
-            p: 2,
-          }}
-        >
+        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
           <Stack spacing={2}>
             {children}
           </Stack>
         </Box>
 
-        <Divider />
-
-        {/* Кнопки действий */}
-        <Box p={2}>
+        <Box sx={{ flexShrink: 0, p: 2, borderTop: 1, borderColor: 'divider' }}>
           <Stack spacing={1}>
             <Button
               onClick={handleApply}

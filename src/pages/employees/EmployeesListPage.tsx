@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { Box, Typography, Alert } from '@mui/material';
@@ -30,6 +30,7 @@ import {
 } from '../../hooks';
 import { getStatusFilterOptions } from '../../utils/filterUtils';
 import type { Employee, EmployeeFilters } from '../../types';
+import type { EmployeeFormHandle } from '../employees/EmployeeFormPage';
 
 interface FormDialogState {
   open: boolean;
@@ -45,6 +46,8 @@ export const EmployeesListPage = () => {
     open: false,
     employeeId: undefined,
   });
+  const formRef = useRef<EmployeeFormHandle | null>(null);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   // Fetch employees data
   const {
@@ -318,6 +321,9 @@ export const EmployeesListPage = () => {
         open={formDialog.open}
         onClose={handleCloseFormDialog}
         employeeId={formDialog.employeeId}
+        formRef={formRef}
+        isSubmitting={isFormSubmitting}
+        onSubmittingChange={setIsFormSubmitting}
       />
     </Box>
   );
