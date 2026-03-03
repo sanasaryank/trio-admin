@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Alert } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -46,6 +46,7 @@ import {
 
 // Utils
 import { logger } from '../../utils/logger';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import { getDisplayName } from '../../utils/dictionaryUtils';
 import { getStatusFilterOptions } from '../../utils/filterUtils';
 
@@ -54,6 +55,7 @@ import type {
   RestaurantListItem,
   RestaurantFilters,
 } from '../../types';
+import type { RestaurantFormHandle } from './RestaurantFormPage';
 
 type SortField =
   | 'id'
@@ -74,12 +76,15 @@ interface FormDialogState {
 export const RestaurantsListPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { showError } = useAppSnackbar();
 
   // Form dialog state
   const [formDialog, setFormDialog] = useState<FormDialogState>({
     open: false,
     restaurantId: undefined,
   });
+  const formRef = useRef<RestaurantFormHandle | null>(null);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   // Fetch restaurants
   const {
@@ -98,6 +103,10 @@ export const RestaurantsListPage = () => {
     },
     []
   );
+
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
 
   // Lazy load dictionaries only when filter drawer is opened
   const [dictionariesLoaded, setDictionariesLoaded] = useState(false);
@@ -483,8 +492,6 @@ export const RestaurantsListPage = () => {
     ]
   );
 
-  const error = fetchError?.message || null;
-
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -502,12 +509,6 @@ export const RestaurantsListPage = () => {
           </Button>
         </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
 
       <Box sx={{ mb: 2 }}>
         <SearchField
@@ -678,6 +679,9 @@ export const RestaurantsListPage = () => {
         open={formDialog.open}
         onClose={handleCloseFormDialog}
         restaurantId={formDialog.restaurantId}
+        formRef={formRef}
+        isSubmitting={isFormSubmitting}
+        onSubmittingChange={setIsFormSubmitting}
       />
     </Box>
   );

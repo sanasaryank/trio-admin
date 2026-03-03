@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,6 +14,8 @@ import {
 } from '@mui/material';
 import { Language as LanguageIcon } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
+import { getErrorMessage } from '../../api/errors';
 import TextField from '../../components/ui/atoms/TextField';
 
 const languages = [
@@ -25,7 +27,8 @@ const languages = [
 export const LoginPage = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const { login, isLoading, error } = useAuthStore();
+  const { login, isLoading } = useAuthStore();
+  const { showError } = useAppSnackbar();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export const LoginPage = () => {
       await login({ username, password });
       navigate('/');
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Login failed');
+      showError(getErrorMessage(err));
     }
   };
 
@@ -111,10 +114,10 @@ export const LoginPage = () => {
             {t('auth.signIn')}
           </Typography>
 
-          {/* Error Alert */}
-          {(error || localError) && (
+          {/* Validation error */}
+          {localError && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              {error || localError}
+              {localError}
             </Alert>
           )}
 

@@ -1,118 +1,73 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Dialog, DialogTitle, DialogContent, IconButton, Box } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
-import { EmployeeFormPage } from '../../pages/employees/EmployeeFormPage';
+import { Box } from '@mui/material';
+import { EmployeeFormPage, type EmployeeFormHandle } from '../../pages/employees/EmployeeFormPage';
 import Button from '../ui/atoms/Button';
+import { FormDialogLayout } from '../ui/molecules/FormDialogLayout';
 
 interface EmployeeFormDialogProps {
   open: boolean;
   onClose: () => void;
   employeeId?: string;
+  formRef: React.RefObject<EmployeeFormHandle | null>;
+  isSubmitting: boolean;
+  onSubmittingChange: (submitting: boolean) => void;
 }
 
-export const EmployeeFormDialog = ({ open, onClose, employeeId }: EmployeeFormDialogProps) => {
+export const EmployeeFormDialog = ({
+  open,
+  onClose,
+  employeeId,
+  formRef,
+  isSubmitting,
+  onSubmittingChange,
+}: EmployeeFormDialogProps) => {
   const { t } = useTranslation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const submitHandlerRef = useRef<(() => void) | null>(null);
-
-  const handleSubmitCallback = useCallback((handler: () => void) => {
-    submitHandlerRef.current = handler;
-  }, []);
-
-  const handleSubmit = useCallback(() => {
-    if (submitHandlerRef.current) {
-      submitHandlerRef.current();
-    }
-  }, []);
 
   const handleCancel = useCallback(() => {
     onClose();
   }, [onClose]);
 
-  const handleSubmittingChange = useCallback((submitting: boolean) => {
-    setIsSubmitting(submitting);
-  }, []);
+  const handleSave = useCallback(() => {
+    formRef.current?.submit();
+  }, [formRef]);
+
+  const title = (
+    <Box component="span" sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
+      {employeeId ? t('employees.edit') : t('employees.new')}
+    </Box>
+  );
+
+  const footer = (
+    <>
+      <Button variant="outlined" onClick={handleCancel} disabled={isSubmitting}>
+        {t('common.cancel')}
+      </Button>
+      <Button variant="contained" color="primary" onClick={handleSave} loading={isSubmitting}>
+        {t('common.save')}
+      </Button>
+    </>
+  );
 
   return (
-    <Dialog
+    <FormDialogLayout
       open={open}
       onClose={onClose}
+      title={title}
+      footer={footer}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        },
-      }}
+      disableClose={isSubmitting}
+      paperSx={{ height: 'auto', maxHeight: '90vh' }}
+      aria-labelledby="employee-form-dialog-title"
     >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          pb: 2,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Box component="span" sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
-          {employeeId ? t('employees.edit') : t('employees.new')}
-        </Box>
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            color: 'text.secondary',
-            '&:hover': {
-              bgcolor: 'action.hover',
-            },
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent
-        sx={{
-          pt: 0,
-          pb: 3,
-        }}
-      >
-        <EmployeeFormPage
-          onClose={onClose}
-          employeeId={employeeId}
-          isDialog
-          onSubmitCallback={handleSubmitCallback}
-          onSubmittingChange={handleSubmittingChange}
-        />
-        <Box
-          sx={{
-            mt: 3,
-            pt: 2,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: 2,
-          }}
-        >
-          <Button
-            variant="outlined"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSubmit}
-            loading={isSubmitting}
-          >
-            {t('common.save')}
-          </Button>
-        </Box>
-      </DialogContent>
-    </Dialog>
+      <EmployeeFormPage
+        ref={formRef}
+        onClose={onClose}
+        employeeId={employeeId}
+        isDialog
+        onSubmittingChange={onSubmittingChange}
+      />
+    </FormDialogLayout>
   );
 };

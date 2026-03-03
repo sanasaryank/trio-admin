@@ -21,7 +21,7 @@ export type { UseAuditLogProps, UseAuditLogReturn } from './useAuditLog';
 
 // Form handling
 export { default as useFormSubmit } from './useFormSubmit';
-export type { UseFormSubmitReturn } from './useFormSubmit';
+export type { UseFormSubmitReturn, UseFormSubmitOptions } from './useFormSubmit';
 
 // UI state management
 export { default as useDrawer } from './useDrawer';
