@@ -2,7 +2,7 @@ import type { Restaurant, RestaurantListItem, RestaurantFormData, QRCode, QRBatc
 import { realApiFetch } from './client';
 import { env } from '../../config/env';
 
-const RESTAURANTS_BASE_URL = `${env.apiBaseUrl}/restaurants`;
+const RESTAURANTS_BASE_URL = `${env.apiBaseUrl}/placements`;
 const LOCATIONS_BASE_URL = `${env.apiBaseUrl}/locations`;
 
 export const realRestaurantsApi = {

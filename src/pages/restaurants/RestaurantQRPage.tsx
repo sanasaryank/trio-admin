@@ -198,8 +198,8 @@ export const RestaurantQRPage = () => {
 
         switch (sortField) {
           case 'id':
-            const aId = a.id || '';
-            const bId = b.id || '';
+            const aId = a.id != null ? String(a.id) : '';
+            const bId = b.id != null ? String(b.id) : '';
             compareValue = aId.localeCompare(bId);
             break;
           case 'assigned':
@@ -208,8 +208,8 @@ export const RestaurantQRPage = () => {
             compareValue = aAssigned - bAssigned;
             break;
           case 'type':
-            const aType = a.type || 'Static';
-            const bType = b.type || 'Static';
+            const aType = typeof a.type === 'string' ? a.type : 'Static';
+            const bType = typeof b.type === 'string' ? b.type : 'Static';
             compareValue = aType.localeCompare(bType);
             break;
         }
