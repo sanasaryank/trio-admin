@@ -13,7 +13,7 @@ import {
   ListItemText,
 } from '@mui/material';
 import { Language as LanguageIcon } from '@mui/icons-material';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '../store/authStore';
 
 const languages = [
   { code: 'hy', name: 'Հայերեն', flag: '🇦🇲' },

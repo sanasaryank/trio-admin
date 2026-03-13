@@ -5,12 +5,17 @@ Complete API reference for the Trio SuperAdmin application.
 **⚠️ Note:** This documentation uses the old token-based authentication model. 
 For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 
+**Base URLs (no `/admin/` prefix):**
+- Dev: `https://api.trio.am/dev` → e.g. `POST https://api.trio.am/dev/login`
+- Stage: `https://api.trio.am/stage` → e.g. `POST https://api.trio.am/stage/login`
+- Production: `https://api.trio.am` → e.g. `POST https://api.trio.am/login`
+
 ---
 
 ## Authentication Endpoints
 
 ### 1. Login
-**Endpoint:** `POST https://dev.getmenu.am/admin/auth/login`
+**Endpoint:** `POST {baseUrl}/login` (e.g. `POST https://api.trio.am/dev/login`)
 
 **Authentication:** Basic Auth (username:password in Authorization header)
 
@@ -40,7 +45,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 - `admin_token` - HttpOnly, Secure, SameSite=Strict
 
 ### 2. Get Current User
-**Endpoint:** `GET https://dev.getmenu.am/admin/auth/me`
+**Endpoint:** `GET {baseUrl}/me` (e.g. `GET https://api.trio.am/dev/me`)
 
 **Authentication:** Cookie (admin_token automatically sent)
 
@@ -56,7 +61,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 3. Logout
-**Endpoint:** `POST https://dev.getmenu.am/admin/auth/logout`
+**Endpoint:** `POST {baseUrl}/logout` (e.g. `POST https://api.trio.am/dev/logout`)
 
 **Authentication:** Bearer Token
 
@@ -69,7 +74,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ## Employee Endpoints
 
 ### 1. List All Employees
-**Endpoint:** `GET /api/employees`
+**Endpoint:** `GET {baseUrl}/employees`
 
 **Request:** No body
 
@@ -94,7 +99,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 2. Get Employee by ID
-**Endpoint:** `GET /api/employees/{id}`
+**Endpoint:** `GET {baseUrl}/employees/{id}`
 
 **Request:** No body
 
@@ -111,7 +116,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 3. Create Employee
-**Endpoint:** `POST /api/employees`
+**Endpoint:** `POST {baseUrl}/employees`
 
 **Request:**
 ```json
@@ -137,7 +142,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 4. Update Employee
-**Endpoint:** `PUT /api/employees/{id}`
+**Endpoint:** `PUT {baseUrl}/employees/{id}`
 
 **Request:**
 ```json
@@ -165,7 +170,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 5. Block/Unblock Employee
-**Endpoint:** `PATCH /api/employees/{id}/block`
+**Endpoint:** `PATCH {baseUrl}/employees/{id}/block`
 
 **Request:**
 ```json
@@ -190,7 +195,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ## Restaurant Endpoints
 
 ### 1. List All Restaurants
-**Endpoint:** `GET /api/restaurants`
+**Endpoint:** `GET {baseUrl}/restaurants`
 
 **Request:** No body
 
@@ -225,7 +230,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 2. Get Restaurant by ID
-**Endpoint:** `GET /api/restaurants/{id}`
+**Endpoint:** `GET {baseUrl}/restaurants/{id}`
 
 **Request:** No body
 
@@ -259,7 +264,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 3. Create Restaurant
-**Endpoint:** `POST /api/restaurants`
+**Endpoint:** `POST {baseUrl}/restaurants`
 
 **Request:**
 ```json
@@ -316,7 +321,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 4. Update Restaurant
-**Endpoint:** `PUT /api/restaurants/{id}`
+**Endpoint:** `PUT {baseUrl}/restaurants/{id}`
 
 **Request:**
 ```json
@@ -374,7 +379,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 5. Block/Unblock Restaurant
-**Endpoint:** `PATCH /api/restaurants/{id}/block`
+**Endpoint:** `PATCH {baseUrl}/restaurants/{id}/block`
 
 **Request:**
 ```json
@@ -411,7 +416,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 6. Get QR Codes for Restaurant
-**Endpoint:** `GET /api/restaurants/{restaurantId}/qr-codes`
+**Endpoint:** `GET {baseUrl}/restaurants/{restaurantId}/qr-codes`
 
 **Request:** No body
 
@@ -436,7 +441,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 7. Create QR Code Batch
-**Endpoint:** `POST /api/restaurants/{restaurantId}/qr-codes/batch`
+**Endpoint:** `POST {baseUrl}/restaurants/{restaurantId}/qr-codes/batch`
 
 **Request:**
 ```json
@@ -482,7 +487,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 8. Block/Unblock QR Code
-**Endpoint:** `PATCH /api/restaurants/{restaurantId}/qr-codes/{qrId}/block`
+**Endpoint:** `PATCH {baseUrl}/restaurants/{restaurantId}/qr-codes/{qrId}/block`
 
 **Request:**
 ```json
@@ -506,7 +511,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ## Dictionary Endpoints
 
 ### 1. List Dictionary Items
-**Endpoint:** `GET /api/dictionaries/{dictKey}`
+**Endpoint:** `GET {baseUrl}/dictionaries/{dictKey}`
 
 **Dictionary Keys:**
 - `restaurant-types`
@@ -575,7 +580,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 2. Get Dictionary Item by ID
-**Endpoint:** `GET /api/dictionaries/{dictKey}/{id}`
+**Endpoint:** `GET {baseUrl}/dictionaries/{dictKey}/{id}`
 
 **Request:** No body
 
@@ -590,7 +595,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 3. Create Dictionary Item
-**Endpoint:** `POST /api/dictionaries/{dictKey}`
+**Endpoint:** `POST {baseUrl}/dictionaries/{dictKey}`
 
 **Request for basic dictionary:**
 ```json
@@ -639,7 +644,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 4. Update Dictionary Item
-**Endpoint:** `PUT /api/dictionaries/{dictKey}/{id}`
+**Endpoint:** `PUT {baseUrl}/dictionaries/{dictKey}/{id}`
 
 **Request:**
 ```json
@@ -660,7 +665,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ```
 
 ### 5. Block/Unblock Dictionary Item
-**Endpoint:** `PATCH /api/dictionaries/{dictKey}/{id}/block`
+**Endpoint:** `PATCH {baseUrl}/dictionaries/{dictKey}/{id}/block`
 
 **Request:**
 ```json
@@ -683,7 +688,7 @@ For the updated cookie-based authentication, see [docs/API.md](./docs/API.md).
 ## Audit Log Endpoints
 
 ### 1. Get Audit Events
-**Endpoint:** `GET /api/audit/events`
+**Endpoint:** `GET {baseUrl}/audit/events`
 
 **Request Parameters (optional):**
 - `entityType`: Filter by entity type (employee, restaurant, qr, dictionary, user, advertiser, campaign, creative)
@@ -927,7 +932,7 @@ For complete error handling documentation including all status codes (455, 461, 
 This endpoint provides read-only access to all geographic location data (countries, cities, and districts) in a single request for populating dropdowns in restaurant forms.
 
 ### 1. Get All Locations
-**Endpoint:** `GET /api/locations`
+**Endpoint:** `GET {baseUrl}/locations`
 
 **Request:** No body
 

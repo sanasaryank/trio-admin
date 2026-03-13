@@ -21,12 +21,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (credentials: LoginRequest) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await authApi.login(credentials);
-      const user: User = {
-        username: response.username,
-        firstName: response.firstName,
-        lastName: response.lastName,
-      };
+      await authApi.login(credentials);
+      const user = await authApi.me();
       set({ user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({

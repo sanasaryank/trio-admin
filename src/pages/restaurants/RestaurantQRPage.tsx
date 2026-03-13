@@ -1,18 +1,10 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import {
-  Box,
-  Typography,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { ArrowBack as ArrowBackIcon, Add as AddIcon, FilterList as FilterListIcon } from '@mui/icons-material';
 import { QRCodeCanvas } from 'qrcode.react';
 
@@ -31,6 +23,7 @@ import Pagination from '../../components/ui/molecules/Pagination';
 import FilterDrawer from '../../components/ui/molecules/FilterDrawer';
 import FormField from '../../components/ui/molecules/FormField';
 import ConfirmDialog from '../../components/ui/molecules/ConfirmDialog';
+import { FormDialogLayout } from '../../components/ui/molecules/FormDialogLayout';
 
 // Hooks
 import {
@@ -43,6 +36,9 @@ import {
   useBlockToggle,
 } from '../../hooks';
 import { logger } from '../../utils/logger';
+import { scrollToFirstError } from '../../utils/scrollToFirstError';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
+import { getErrorMessage } from '../../api/errors';
 import { getDisplayName } from '../../utils/dictionaryUtils';
 import { getStatusFilterOptions } from '../../utils/filterUtils';
 
@@ -136,7 +132,10 @@ export const RestaurantQRPage = () => {
   const filterDrawer = useDrawer();
 
   // Create dialog
+  const { showError } = useAppSnackbar();
   const [createDialogOpen, toggleCreateDialog] = useToggle(false);
+  const createQRFormRef = useRef<HTMLFormElement>(null);
+  const createDialogContentRef = useRef<HTMLDivElement>(null);
 
   // Confirm dialog
   const confirmDialog = useConfirmDialog();
@@ -199,8 +198,8 @@ export const RestaurantQRPage = () => {
 
         switch (sortField) {
           case 'id':
-            const aId = a.id || '';
-            const bId = b.id || '';
+            const aId = a.id != null ? String(a.id) : '';
+            const bId = b.id != null ? String(b.id) : '';
             compareValue = aId.localeCompare(bId);
             break;
           case 'assigned':
@@ -209,8 +208,8 @@ export const RestaurantQRPage = () => {
             compareValue = aAssigned - bAssigned;
             break;
           case 'type':
-            const aType = a.type || 'Static';
-            const bType = b.type || 'Static';
+            const aType = typeof a.type === 'string' ? a.type : 'Static';
+            const bType = typeof b.type === 'string' ? b.type : 'Static';
             compareValue = aType.localeCompare(bType);
             break;
         }
@@ -285,10 +284,10 @@ export const RestaurantQRPage = () => {
         tableState.handlePageChange(0);
       } catch (err) {
         logger.error('Error creating QR codes', err as Error, { restaurantId: id, quantity: data.quantity });
-        alert(t('common.error') + ': ' + (err as Error).message);
+        showError(getErrorMessage(err));
       }
     },
-    [id, loadQRCodes, handleCloseCreateDialog, tableState, t]
+    [id, loadQRCodes, handleCloseCreateDialog, tableState, showError]
   );
 
   const handleTypeChange = useCallback(
@@ -305,12 +304,12 @@ export const RestaurantQRPage = () => {
             await loadQRCodes();
           } catch (err) {
             logger.error('Error changing QR type', err as Error, { restaurantId: id, qrId: qr.id });
-            alert(t('common.error') + ': ' + (err as Error).message);
+            showError(getErrorMessage(err));
           }
         },
       });
     },
-    [confirmDialog, id, loadQRCodes, t]
+    [confirmDialog, id, loadQRCodes, showError]
   );
 
   const handleBack = useCallback(() => {
@@ -432,8 +431,11 @@ export const RestaurantQRPage = () => {
     [handleBlockToggle, handleTypeChange, t]
   );
 
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
+
   const isLoading = isLoadingRestaurant || isLoadingQRCodes;
-  const error = fetchError?.message || null;
   const restaurantName = restaurant?.name 
     ? (typeof restaurant.name === 'string' ? restaurant.name : getDisplayName(restaurant.name))
     : '';
@@ -458,12 +460,6 @@ export const RestaurantQRPage = () => {
           </Button>
         </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
 
       <DataTable
         columns={columns}
@@ -530,54 +526,63 @@ export const RestaurantQRPage = () => {
       </FilterDrawer>
 
       {/* Create QR Batch Dialog */}
-      <Dialog
+      <FormDialogLayout
         open={createDialogOpen}
         onClose={handleCloseCreateDialog}
-        aria-labelledby="create-qr-dialog-title"
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle id="create-qr-dialog-title">{t('restaurants.createQRCodes')}</DialogTitle>
-        <form onSubmit={handleSubmit(handleCreateQRBatch)}>
-          <DialogContent>
-            <FormField
-              name="quantity"
-              control={control}
-              label={t('restaurants.quantity')}
-              type="number"
-              required
-              disabled={isSubmitting}
-            />
-            <Box sx={{ mt: 2 }}>
-              <FormField
-                name="type"
-                control={control}
-                label={t('restaurants.type')}
-                type="select"
-                required
-                disabled={isSubmitting}
-                options={[
-                  { value: 'Static', label: t('restaurants.static') },
-                  { value: 'Dynamic', label: t('restaurants.dynamic') },
-                ]}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseCreateDialog} variant="text" color="secondary">
+        title={t('restaurants.createQRCodes')}
+        contentRef={createDialogContentRef}
+        footer={
+          <>
+            <Button onClick={handleCloseCreateDialog} variant="outlined" color="secondary" disabled={isSubmitting}>
               {t('common.cancel')}
             </Button>
             <Button
-              type="submit"
-              color="primary"
               variant="contained"
+              color="primary"
               loading={isSubmitting}
+              onClick={() => createQRFormRef.current?.requestSubmit()}
             >
               {t('common.create')}
             </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+          </>
+        }
+        maxWidth="xs"
+        fullWidth
+        disableClose={isSubmitting}
+        paperSx={{ height: 'auto', maxHeight: '90vh' }}
+        aria-labelledby="create-qr-dialog-title"
+      >
+        <Box
+          component="form"
+          ref={createQRFormRef}
+          onSubmit={handleSubmit(handleCreateQRBatch, (errors) => scrollToFirstError(errors, createDialogContentRef.current))}
+          noValidate
+          sx={{ pt: 1 }}
+        >
+          <FormField
+            name="quantity"
+            control={control}
+            label={t('restaurants.quantity')}
+            type="number"
+            required
+            disabled={isSubmitting}
+          />
+          <Box sx={{ mt: 2 }}>
+            <FormField
+              name="type"
+              control={control}
+              label={t('restaurants.type')}
+              type="select"
+              required
+              disabled={isSubmitting}
+              options={[
+                { value: 'Static', label: t('restaurants.static') },
+                { value: 'Dynamic', label: t('restaurants.dynamic') },
+              ]}
+            />
+          </Box>
+        </Box>
+      </FormDialogLayout>
 
       {/* Confirm Dialog */}
       <ConfirmDialog {...confirmDialog.dialogProps} />

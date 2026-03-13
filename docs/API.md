@@ -17,12 +17,15 @@ Complete API reference for the Trio SuperAdmin application.
 
 ## Overview
 
-### Base URLs
+### Base URLs (VITE_API_BASE_URL)
 
-| Environment | URL |
-|-------------|-----|
-| Development | `https://dev.getmenu.am` |
-| Production  | `https://api.getmenu.am` |
+No `/admin/` prefix. All endpoints are relative to base URL.
+
+| Environment | Base URL |
+|-------------|----------|
+| Dev         | `https://api.trio.am/dev` |
+| Stage       | `https://api.trio.am/stage` |
+| Production  | `https://api.trio.am` |
 
 ### Request Format
 
@@ -55,14 +58,14 @@ All requests must include:
 
 Authenticate user and receive HttpOnly cookie.
 
-**Endpoint:** `POST /admin/auth/login`
+**Endpoint:** `POST /auth/login` (relative to base URL)
 
 **Authentication:** Basic Auth (`Authorization: Basic <base64(username:password)>`)
 
 **Request:**
 ```http
-POST /admin/auth/login HTTP/1.1
-Host: dev.getmenu.am
+POST /auth/login HTTP/1.1
+Host: api.trio.am
 Authorization: Basic YWRtaW46cGFzc3dvcmQ=
 Content-Type: application/json
 ```
@@ -90,14 +93,14 @@ Content-Type: application/json
 
 Get authenticated user information.
 
-**Endpoint:** `GET /admin/auth/me`
+**Endpoint:** `GET /auth/me` (relative to base URL)
 
 **Authentication:** Cookie
 
 **Request:**
 ```http
-GET /admin/auth/me HTTP/1.1
-Host: dev.getmenu.am
+GET /auth/me HTTP/1.1
+Host: api.trio.am
 Cookie: admin_token=...
 ```
 
@@ -121,14 +124,14 @@ Cookie: admin_token=...
 
 Clear authentication session.
 
-**Endpoint:** `POST /admin/auth/logout`
+**Endpoint:** `POST /auth/logout` (relative to base URL)
 
 **Authentication:** Cookie
 
 **Request:**
 ```http
-POST /admin/auth/logout HTTP/1.1
-Host: dev.getmenu.am
+POST /auth/logout HTTP/1.1
+Host: api.trio.am
 Cookie: admin_token=...
 ```
 
@@ -150,7 +153,7 @@ Cookie: admin_token=...
 
 Get list of all employees.
 
-**Endpoint:** `GET /admin/employees`
+**Endpoint:** `GET /employees` (relative to base URL)
 
 **Authentication:** Cookie
 
@@ -159,8 +162,8 @@ None (filtering done client-side)
 
 **Request:**
 ```http
-GET /admin/employees HTTP/1.1
-Host: dev.getmenu.am
+GET /employees HTTP/1.1
+Host: api.trio.am
 Cookie: admin_token=...
 ```
 
@@ -195,7 +198,7 @@ Cookie: admin_token=...
 
 Get single employee details.
 
-**Endpoint:** `GET /admin/employees/{id}`
+**Endpoint:** `GET /employees/{id}`
 
 **Authentication:** Cookie
 
@@ -204,8 +207,8 @@ Get single employee details.
 
 **Request:**
 ```http
-GET /admin/employees/emp1 HTTP/1.1
-Host: dev.getmenu.am
+GET /employees/emp1 HTTP/1.1
+Host: api.trio.am
 Cookie: admin_token=...
 ```
 
@@ -233,7 +236,7 @@ Cookie: admin_token=...
 
 Create new employee.
 
-**Endpoint:** `POST /admin/employees`
+**Endpoint:** `POST /employees`
 
 **Authentication:** Cookie
 
@@ -279,7 +282,7 @@ Create new employee.
 
 Update existing employee.
 
-**Endpoint:** `PUT /admin/employees/{id}`
+**Endpoint:** `PUT /employees/{id}`
 
 **Authentication:** Cookie
 
@@ -334,7 +337,7 @@ Update existing employee.
 
 Toggle employee blocked status.
 
-**Endpoint:** `PATCH /admin/employees/{id}/block`
+**Endpoint:** `PATCH /employees/{id}/block`
 
 **Authentication:** Cookie
 
@@ -374,7 +377,7 @@ Toggle employee blocked status.
 
 Get list of all restaurants.
 
-**Endpoint:** `GET /admin/restaurants`
+**Endpoint:** `GET /restaurants`
 
 **Authentication:** Cookie
 
@@ -405,7 +408,7 @@ Get list of all restaurants.
 
 Get single restaurant details.
 
-**Endpoint:** `GET /admin/restaurants/{id}`
+**Endpoint:** `GET /restaurants/{id}`
 
 **Authentication:** Cookie
 
@@ -457,7 +460,7 @@ Get single restaurant details.
 
 Create new restaurant.
 
-**Endpoint:** `POST /admin/restaurants`
+**Endpoint:** `POST /restaurants`
 
 **Authentication:** Cookie
 
@@ -540,7 +543,7 @@ Create new restaurant.
 
 Update existing restaurant.
 
-**Endpoint:** `PUT /admin/restaurants/{id}`
+**Endpoint:** `PUT /restaurants/{id}`
 
 **Authentication:** Cookie
 
@@ -563,7 +566,7 @@ Update existing restaurant.
 
 Toggle restaurant blocked status.
 
-**Endpoint:** `PATCH /admin/restaurants/{id}/block`
+**Endpoint:** `PATCH /restaurants/{id}/block`
 
 **Authentication:** Cookie
 
@@ -586,7 +589,7 @@ Toggle restaurant blocked status.
 
 Get QR codes for restaurant tables.
 
-**Endpoint:** `GET /admin/restaurants/{id}/qr`
+**Endpoint:** `GET /restaurants/{id}/qr`
 
 **Authentication:** Cookie
 
@@ -625,7 +628,7 @@ Get QR codes for restaurant tables.
 
 Batch create QR codes for restaurant.
 
-**Endpoint:** `POST /admin/restaurants/{id}/qr/batch`
+**Endpoint:** `POST /restaurants/{id}/qr/batch`
 
 **Authentication:** Cookie
 
@@ -672,7 +675,7 @@ Batch create QR codes for restaurant.
 
 Get items from a specific dictionary.
 
-**Endpoint:** `GET /admin/dictionaries/{key}`
+**Endpoint:** `GET /dictionaries/{key}`
 
 **Authentication:** Cookie
 
@@ -689,8 +692,8 @@ Get items from a specific dictionary.
 
 **Request:**
 ```http
-GET /admin/dictionaries/restaurant-types HTTP/1.1
-Host: dev.getmenu.am
+GET /dictionaries/restaurant-types HTTP/1.1
+Host: api.trio.am
 Cookie: admin_token=...
 ```
 
@@ -730,7 +733,7 @@ Cookie: admin_token=...
 
 Create new item in dictionary.
 
-**Endpoint:** `POST /admin/dictionaries/{key}`
+**Endpoint:** `POST /dictionaries/{key}`
 
 **Authentication:** Cookie
 
@@ -774,7 +777,7 @@ Create new item in dictionary.
 
 Update existing dictionary item.
 
-**Endpoint:** `PUT /admin/dictionaries/{key}/{id}`
+**Endpoint:** `PUT /dictionaries/{key}/{id}`
 
 **Authentication:** Cookie
 
@@ -809,7 +812,7 @@ Update existing dictionary item.
 
 Delete dictionary item.
 
-**Endpoint:** `DELETE /admin/dictionaries/{key}/{id}`
+**Endpoint:** `DELETE /dictionaries/{key}/{id}`
 
 **Authentication:** Cookie
 
@@ -837,7 +840,7 @@ Delete dictionary item.
 
 Get audit log events with filtering.
 
-**Endpoint:** `GET /admin/audit`
+**Endpoint:** `GET /audit`
 
 **Authentication:** Cookie
 
@@ -853,8 +856,8 @@ Get audit log events with filtering.
 
 **Request:**
 ```http
-GET /admin/audit?startDate=1705622400&action=create&limit=50 HTTP/1.1
-Host: dev.getmenu.am
+GET /audit?startDate=1705622400&action=create&limit=50 HTTP/1.1
+Host: api.trio.am
 Cookie: admin_token=...
 ```
 
@@ -961,7 +964,7 @@ Returned for requests with a restaurant ID when the restaurant doesn't exist on 
 
 **Example:**
 ```http
-GET /admin/restaurants/invalid-id HTTP/1.1
+GET /restaurants/invalid-id HTTP/1.1
 
 HTTP/1.1 456 Restaurant Not Found
 {
@@ -975,7 +978,7 @@ Returned on POST or PUT requests when a unique field constraint is violated (e.g
 
 **Example:**
 ```http
-POST /admin/restaurants HTTP/1.1
+POST /restaurants HTTP/1.1
 {
   "name": "Existing Restaurant",
   ...
@@ -993,7 +996,7 @@ Returned when an object was deleted during an operation (between read and update
 
 **Example:**
 ```http
-PUT /admin/employees/emp123 HTTP/1.1
+PUT /employees/emp123 HTTP/1.1
 {...}
 
 HTTP/1.1 458 Object Not Found
@@ -1008,7 +1011,7 @@ Returned on PUT requests when the object's hash/version changed during the opera
 
 **Example:**
 ```http
-PUT /admin/restaurants/rest123 HTTP/1.1
+PUT /restaurants/rest123 HTTP/1.1
 {
   "hash": "old-hash-value",
   ...
@@ -1171,7 +1174,7 @@ const fetchWithRetry = async (maxAttempts = 3) => {
 
 ```typescript
 try {
-  const response = await fetch('/admin/restaurants', {...});
+  const response = await fetch(`${baseUrl}/restaurants`, {...});
   
   if (!response.ok) {
     const errorData = await response.json();
@@ -1266,9 +1269,9 @@ Retry-After: 30
 For large result sets, use `limit` and `offset` parameters:
 
 ```
-GET /admin/audit?limit=50&offset=0    # First page
-GET /admin/audit?limit=50&offset=50   # Second page
-GET /admin/audit?limit=50&offset=100  # Third page
+GET /audit?limit=50&offset=0    # First page
+GET /audit?limit=50&offset=50   # Second page
+GET /audit?limit=50&offset=100  # Third page
 ```
 
 ### Caching

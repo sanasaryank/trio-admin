@@ -1,15 +1,17 @@
-import { useEffect, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useCallback, useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { Box, Paper, Typography, Alert, CircularProgress } from '@mui/material';
+import { Box, Paper, Typography, CircularProgress } from '@mui/material';
 import { employeesApi } from '../../api/endpoints';
 import { FormField } from '../../components/ui/molecules';
 import { Button } from '../../components/ui/atoms';
 import { useFormSubmit, useFetch } from '../../hooks';
 import { logger } from '../../utils/logger';
+import { scrollToFirstError } from '../../utils/scrollToFirstError';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import type { EmployeeFormData, Employee } from '../../types';
 
 const createEmployeeSchema = (t: (key: string) => string) => z.object({
@@ -32,28 +34,31 @@ const createEmployeeSchema = (t: (key: string) => string) => z.object({
 
 type EmployeeFormValues = z.infer<ReturnType<typeof createEmployeeSchema>>;
 
+export interface EmployeeFormHandle {
+  submit: () => void;
+}
+
 interface EmployeeFormPageProps {
   onClose?: () => void;
   employeeId?: string;
   isDialog?: boolean;
-  onSubmitCallback?: (handler: () => void) => void;
   onSubmittingChange?: (isSubmitting: boolean) => void;
 }
 
-export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubmitCallback, onSubmittingChange }: EmployeeFormPageProps = {}) => {
+export const EmployeeFormPage = forwardRef<EmployeeFormHandle, EmployeeFormPageProps>(function EmployeeFormPage(
+  { onClose, employeeId, isDialog = false, onSubmittingChange },
+  ref
+) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: routeId } = useParams<{ id: string }>();
   const id = employeeId || routeId;
   const isEditMode = !!id;
 
-  // Store hash separately to ensure it persists
   const hashRef = useRef<string | undefined>(undefined);
 
-  // Create schema with translations
   const employeeSchema = useMemo(() => createEmployeeSchema(t), [t]);
 
-  // Form state
   const {
     control,
     handleSubmit,
@@ -71,7 +76,6 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
     },
   });
 
-  // Fetch employee data in edit mode
   const {
     data: employeeData,
     loading: isFetching,
@@ -80,7 +84,7 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
     async () => {
       if (isEditMode && id) {
         const data = await employeesApi.getById(id);
-        logger. debug('Fetched employee data', { data });
+        logger.debug('Fetched employee data', { data });
         return data;
       }
       return null;
@@ -88,13 +92,10 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
     [id, isEditMode]
   );
 
-  // Load employee data into form
   useEffect(() => {
     if (employeeData) {
       logger.debug('Loading employee data with hash', { hash: employeeData.hash });
-      // Store hash in ref
       hashRef.current = employeeData.hash;
-      
       reset({
         firstName: employeeData.firstName,
         lastName: employeeData.lastName,
@@ -106,11 +107,10 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
     }
   }, [employeeData, reset]);
 
-  // Form submission handler
-  const { isSubmitting, error: submitError, handleSubmit: handleFormSubmit } =
-    useFormSubmit<EmployeeFormValues>();
+  const { showError } = useAppSnackbar();
+  const { isSubmitting, handleSubmit: handleFormSubmit } =
+    useFormSubmit<EmployeeFormValues>({ onError: showError });
 
-  // Submit callback
   const onSubmit = useCallback(
     async (data: EmployeeFormValues) => {
       await handleFormSubmit(
@@ -122,12 +122,10 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
             isBlocked: formData.isBlocked,
           } as EmployeeFormData;
 
-          // Username is only included when creating (cannot be changed in edit mode)
           if (!isEditMode) {
             employeePayload.username = formData.username;
           }
 
-          // Include hash in edit mode for optimistic concurrency control
           if (isEditMode && hashRef.current) {
             employeePayload.hash = hashRef.current;
           } else if (isEditMode) {
@@ -136,7 +134,6 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
 
           logger.debug('Employee PUT payload', { employeePayload });
 
-          // Include password if in create mode or if changePassword is true
           if (!isEditMode || formData.changePassword) {
             employeePayload.password = formData.password;
             employeePayload.changePassword = formData.changePassword;
@@ -160,7 +157,6 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
     [handleFormSubmit, isEditMode, id, navigate, onClose]
   );
 
-  // Cancel callback
   const handleCancel = useCallback(() => {
     if (onClose) {
       onClose();
@@ -169,27 +165,28 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
     }
   }, [navigate, onClose]);
 
-  // Notify parent about submit handler - only once when dialog is opened
-  const submitCallbackRef = useRef(onSubmitCallback);
-  submitCallbackRef.current = onSubmitCallback;
+  const onInvalid = useCallback((errors: FieldErrors<EmployeeFormValues>) => {
+    scrollToFirstError(errors);
+  }, []);
 
-  useEffect(() => {
-    if (isDialog && submitCallbackRef.current) {
-      submitCallbackRef.current(handleSubmit(onSubmit));
-    }
-  }, [isDialog]); // Only run when dialog opens
+  useImperativeHandle(ref, () => ({
+    submit: () => {
+      handleSubmit(onSubmit, onInvalid)();
+    },
+  }), [handleSubmit, onSubmit, onInvalid]);
 
-  // Notify parent about submitting state changes
   const submittingChangeRef = useRef(onSubmittingChange);
   submittingChangeRef.current = onSubmittingChange;
-
   useEffect(() => {
     if (isDialog && submittingChangeRef.current) {
       submittingChangeRef.current(isSubmitting);
     }
   }, [isDialog, isSubmitting]);
 
-  // Show loading state while fetching
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
+
   if (isFetching) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -198,18 +195,9 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
     );
   }
 
-  // Show error if fetch failed
-  const error = fetchError || submitError;
-
   const formContent = (
     <>
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error instanceof Error ? error.message : error}
-        </Alert>
-      )}
-
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: isDialog ? 3 : 0 }}>
+      <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate sx={{ mt: isDialog ? 3 : 0 }}>
         <Box sx={{ mb: 2 }}>
           <FormField
             name="firstName"
@@ -317,4 +305,4 @@ export const EmployeeFormPage = ({ onClose, employeeId, isDialog = false, onSubm
       </Paper>
     </Box>
   );
-};
+});

@@ -18,7 +18,7 @@ interface TextFieldProps {
   /** Метка поля */
   label: string;
   /** Тип поля */
-  type?: 'text' | 'password' | 'email' | 'number' | 'url';
+  type?: 'text' | 'password' | 'email' | 'number' | 'url' | 'date';
   /** Placeholder */
   placeholder?: string;
   /** Значение поля */

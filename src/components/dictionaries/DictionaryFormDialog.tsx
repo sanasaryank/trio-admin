@@ -1,24 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, Box, Alert, CircularProgress, IconButton, InputAdornment, Typography } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
-import { useForm, Controller } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, CircularProgress, InputAdornment, Typography } from '@mui/material';
+import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { useSnackbar } from 'notistack';
 import { dictionariesApi } from '../../api/endpoints';
+import { getErrorMessage } from '../../api/errors';
 import { logger } from '../../utils/logger';
 import { getDictionaryFieldsConfig } from '../../utils/dictionaryUtils';
-import type { DictionaryKey, DictionaryFormData, Country, City, District } from '../../types';
-
-// Reusable components
+import type { DictionaryKey, DictionaryFormData, Country, City, District, Placement } from '../../types';
 import Button from '../ui/atoms/Button';
 import TextField from '../ui/atoms/TextField';
 import FormField from '../ui/molecules/FormField';
 import Select from '../ui/atoms/Select';
-
-// Reusable hooks
+import { FormDialogLayout } from '../ui/molecules/FormDialogLayout';
 import useFetch from '../../hooks/useFetch';
+import { scrollToFirstError } from '../../utils/scrollToFirstError';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 
 interface DictionaryFormDialogProps {
   open: boolean;
@@ -79,13 +77,13 @@ export const DictionaryFormDialog = ({
   onSave,
 }: DictionaryFormDialogProps) => {
   const { t } = useTranslation();
-  const { enqueueSnackbar } = useSnackbar();
+  const { showError, showSuccess } = useAppSnackbar();
   const isEditMode = itemId !== undefined;
   const config = useMemo(() => getDictionaryFieldsConfig(dictKey), [dictKey]);
   const isGeographicData = ['countries', 'cities', 'districts'].includes(dictKey);
 
-  const [error, setError] = useState<string | null>(null);
   const [selectedCountryId, setSelectedCountryId] = useState<string | null>(null);
+  const dialogContentRef = useRef<HTMLDivElement>(null);
 
   const validationSchema = useMemo(() => createValidationSchema(dictKey, t), [dictKey, t]);
   type FormData = z.infer<typeof validationSchema>;
@@ -156,7 +154,6 @@ export const DictionaryFormDialog = ({
   useEffect(() => {
     if (!open) {
       reset();
-      setError(null);
       setSelectedCountryId(null);
     } else if (!isEditMode) {
       // Reset to default values when opening in create mode
@@ -193,7 +190,7 @@ export const DictionaryFormDialog = ({
       }
       
       if (config.hasPlacementFields && 'rotation' in itemData) {
-        const placement = itemData as import('../../types').Placement;
+        const placement = itemData as Placement;
         resetData.rotation = placement.rotation;
         resetData.refreshTtl = placement.refreshTtl;
         resetData.noAdjacentSameAdvertiser = placement.noAdjacentSameAdvertiser;
@@ -229,7 +226,7 @@ export const DictionaryFormDialog = ({
         
         // Add hash for updates (required by backend)
         if (isEditMode && itemData && 'hash' in itemData) {
-          formData.hash = (itemData as any).hash;
+          formData.hash = (itemData as { hash: string }).hash;
         }
         
         // Add description for non-geographic data
@@ -246,27 +243,27 @@ export const DictionaryFormDialog = ({
         }
         
         if (config.hasPlacementFields && 'rotation' in data) {
+          const placementData = data as FormData & { refreshTtl?: number; noAdjacentSameAdvertiser?: boolean };
           formData.rotation = data.rotation;
-          formData.refreshTtl = (data as any).refreshTtl;
-          formData.noAdjacentSameAdvertiser = (data as any).noAdjacentSameAdvertiser;
+          formData.refreshTtl = placementData.refreshTtl;
+          formData.noAdjacentSameAdvertiser = placementData.noAdjacentSameAdvertiser;
         }
 
         if (isEditMode) {
           await dictionariesApi.update(dictKey, itemId, formData as unknown as DictionaryFormData);
-          enqueueSnackbar(t('common.savedSuccessfully'), { variant: 'success' });
+          showSuccess(t('common.savedSuccessfully'));
         } else {
           await dictionariesApi.create(dictKey, formData as unknown as DictionaryFormData);
-          enqueueSnackbar(t('common.createdSuccessfully'), { variant: 'success' });
+          showSuccess(t('common.createdSuccessfully'));
         }
 
         onSave();
         onClose();
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('common.error'));
-        enqueueSnackbar(t('common.error'), { variant: 'error' });
+        showError(getErrorMessage(err));
       }
     },
-    [config, isEditMode, dictKey, itemId, onSave, onClose, t, enqueueSnackbar, isGeographicData, itemData]
+    [config, isEditMode, dictKey, itemId, onSave, onClose, t, showError, showSuccess, isGeographicData, itemData]
   );
 
   // Country change handler for districts
@@ -305,68 +302,49 @@ export const DictionaryFormDialog = ({
     }));
   }, [filteredCities, cities]);
 
+  const title = (
+    <Box component="span" sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
+      {isEditMode ? t('common.edit') : t('dictionaries.addEntry')}
+    </Box>
+  );
+
+  const onInvalid = useCallback(
+    (errors: FieldErrors<FormData>) => {
+      scrollToFirstError(errors, dialogContentRef.current);
+    },
+    []
+  );
+
+  const footer = (
+    <>
+      <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
+        {t('common.cancel')}
+      </Button>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleSubmit(onSubmit, onInvalid)}
+        loading={isSubmitting}
+        disabled={isLoading}
+      >
+        {t('common.save')}
+      </Button>
+    </>
+  );
+
   return (
-    <Dialog
+    <FormDialogLayout
       open={open}
       onClose={onClose}
+      title={title}
+      footer={footer}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          height: '90vh',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          borderRadius: 3,
-        },
-      }}
+      disableClose={isSubmitting}
+      aria-labelledby="dictionary-form-dialog-title"
+      contentRef={dialogContentRef}
     >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          pb: 2,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          flexShrink: 0,
-        }}
-      >
-        <Box component="span" sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
-          {isEditMode ? t('common.edit') : t('dictionaries.addEntry')}
-        </Box>
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            color: 'text.secondary',
-            '&:hover': {
-              bgcolor: 'action.hover',
-            },
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent
-        sx={{
-          pt: 3,
-          pb: 0,
-          flexGrow: 1,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <Box sx={{ flexGrow: 1, overflow: 'auto', pb: 2 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {isLoading ? (
+      {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
           </Box>
@@ -602,46 +580,9 @@ export const DictionaryFormDialog = ({
             )}
 
             {/* Blocked switch */}
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <FormField name="isBlocked" control={control as any} label={t('common.blocked')} type="switch" />
+            <FormField name="isBlocked" control={control} label={t('common.blocked')} type="switch" />
           </Box>
         )}
-          </Box>
-
-        <Box
-          sx={{
-            flexShrink: 0,
-            px: 3,
-            py: 2,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: 2,
-            position: 'sticky',
-            bottom: 0,
-          }}
-        >
-          <Button
-            variant="outlined"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSubmit(onSubmit)}
-            loading={isSubmitting}
-            disabled={isLoading}
-          >
-            {t('common.save')}
-          </Button>
-        </Box>
-        </Box>
-      </DialogContent>
-    </Dialog>
+    </FormDialogLayout>
   );
 };
