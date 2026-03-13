@@ -12,7 +12,8 @@ const getAuthHeaders = (): HeadersInit => {
 
 const handleUnauthorized = () => {
   // Redirect to login - cookie will be cleared by server
-  window.location.href = '/login';
+  const loginUrl = `${import.meta.env.BASE_URL}login`;
+  window.location.href = loginUrl;
 };
 
 const getRequestHeaders = (overrides?: HeadersInit): HeadersInit => {

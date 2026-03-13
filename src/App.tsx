@@ -47,7 +47,7 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AppSnackbarProvider>
-          <BrowserRouter basename={import.meta.env.VITE_API_BASE_URL}>
+          <BrowserRouter basename={import.meta.env.VITE_BASE_PATH}>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />

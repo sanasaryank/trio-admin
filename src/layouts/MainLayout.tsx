@@ -166,7 +166,7 @@ export const MainLayout = () => {
       <Toolbar sx={{ justifyContent: 'center', gap: 1 }}>
         <Box
           component="img"
-          src="/logo.svg"
+          src={`${import.meta.env.BASE_URL}logo.svg`}
           alt="TRIO Admin Logo"
           sx={{ height: 32, width: 'auto' }}
         />

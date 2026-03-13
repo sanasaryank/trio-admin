@@ -82,7 +82,7 @@ export const LoginPage = () => {
           {/* Logo */}
           <Box sx={{ mb: 4, textAlign: 'left' }}>
             <img
-              src="/logo.svg"
+              src={`${import.meta.env.BASE_URL}logo.svg`}
               alt="TRIO"
               style={{ height: 32, marginBottom: 16 }}
             />
