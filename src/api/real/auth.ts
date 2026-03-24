@@ -18,6 +18,7 @@ export const realAuthApi = {
       headers: {
         'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/json',
+        ...(import.meta.env.DEV ? { 'X-Origin': 'admin.trio.am' } : {}),
       },
       credentials: 'include', // Important: include cookies in request
     });
