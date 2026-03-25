@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Alert } from '@mui/material';
+import { Box, Typography, Tooltip } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -46,6 +46,7 @@ import {
 
 // Utils
 import { logger } from '../../utils/logger';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import { getDisplayName } from '../../utils/dictionaryUtils';
 import { getStatusFilterOptions } from '../../utils/filterUtils';
 
@@ -54,6 +55,7 @@ import type {
   RestaurantListItem,
   RestaurantFilters,
 } from '../../types';
+import type { RestaurantFormHandle } from './RestaurantFormPage';
 
 type SortField =
   | 'id'
@@ -74,12 +76,15 @@ interface FormDialogState {
 export const RestaurantsListPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { showError } = useAppSnackbar();
 
   // Form dialog state
   const [formDialog, setFormDialog] = useState<FormDialogState>({
     open: false,
     restaurantId: undefined,
   });
+  const formRef = useRef<RestaurantFormHandle | null>(null);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   // Fetch restaurants
   const {
@@ -98,6 +103,10 @@ export const RestaurantsListPage = () => {
     },
     []
   );
+
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
 
   // Lazy load dictionaries only when filter drawer is opened
   const [dictionariesLoaded, setDictionariesLoaded] = useState(false);
@@ -195,7 +204,7 @@ export const RestaurantsListPage = () => {
 
       // Restaurant type filter
       if (currentFilters.typeId && currentFilters.typeId.length > 0) {
-        const hasMatchingType = currentFilters.typeId.some(typeId => 
+        const hasMatchingType = currentFilters.typeId.some(typeId =>
           restaurant.typeId.includes(typeId)
         );
         if (!hasMatchingType) return false;
@@ -203,7 +212,7 @@ export const RestaurantsListPage = () => {
 
       // Price segment filter
       if (currentFilters.priceSegmentId && currentFilters.priceSegmentId.length > 0) {
-        const hasMatchingSegment = currentFilters.priceSegmentId.some(segmentId => 
+        const hasMatchingSegment = currentFilters.priceSegmentId.some(segmentId =>
           restaurant.priceSegmentId.includes(segmentId)
         );
         if (!hasMatchingSegment) return false;
@@ -211,7 +220,7 @@ export const RestaurantsListPage = () => {
 
       // Menu type filter
       if (currentFilters.menuTypeId && currentFilters.menuTypeId.length > 0) {
-        const hasMatchingMenuType = currentFilters.menuTypeId.some(menuTypeId => 
+        const hasMatchingMenuType = currentFilters.menuTypeId.some(menuTypeId =>
           restaurant.menuTypeId.includes(menuTypeId)
         );
         if (!hasMatchingMenuType) return false;
@@ -321,7 +330,7 @@ export const RestaurantsListPage = () => {
   const handleViewAudit = useCallback(
     (restaurant: RestaurantListItem) => {
       const displayName = getDisplayName(restaurant.name);
-      
+
       setAuditState({
         restaurantId: restaurant.id,
         restaurantName: displayName,
@@ -396,7 +405,7 @@ export const RestaurantsListPage = () => {
         sortable: true,
         render: (restaurant) => {
           const displayName = getDisplayName(restaurant.name);
-          
+
           // Only render as link if crmUrl exists
           if (restaurant.crmUrl) {
             return (
@@ -431,13 +440,22 @@ export const RestaurantsListPage = () => {
               justifyContent: 'flex-end',
               alignItems: 'center',
               gap: 0.5,
+              flexWrap: 'wrap',
             }}
           >
-            <Switch
-              checked={!restaurant.isBlocked}
-              disabled={true}
-              onChange={() => {}}
-            />
+            <Tooltip
+              title={!restaurant.isBlocked ? t('common.active') : t('common.blocked')}
+              placement="top"
+              arrow
+            >
+              <span style={{ display: 'inline-flex' }}>
+                <Switch
+                  checked={!restaurant.isBlocked}
+                  disabled={true}
+                  onChange={() => {}}
+                />
+              </span>
+            </Tooltip>
             <IconButton
               onClick={() => handleEdit(restaurant.id)}
               tooltip={t('common.edit')}
@@ -483,13 +501,11 @@ export const RestaurantsListPage = () => {
     ]
   );
 
-  const error = fetchError?.message || null;
-
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Typography variant="h4">{t('restaurants.title')}</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button
             variant="outlined"
             startIcon={<FilterListIcon />}
@@ -502,12 +518,6 @@ export const RestaurantsListPage = () => {
           </Button>
         </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
 
       <Box sx={{ mb: 2 }}>
         <SearchField
@@ -678,6 +688,9 @@ export const RestaurantsListPage = () => {
         open={formDialog.open}
         onClose={handleCloseFormDialog}
         restaurantId={formDialog.restaurantId}
+        formRef={formRef}
+        isSubmitting={isFormSubmitting}
+        onSubmittingChange={setIsFormSubmitting}
       />
     </Box>
   );

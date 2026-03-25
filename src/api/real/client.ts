@@ -12,7 +12,27 @@ const getAuthHeaders = (): HeadersInit => {
 
 const handleUnauthorized = () => {
   // Redirect to login - cookie will be cleared by server
-  window.location.href = '/login';
+  const loginUrl = `${import.meta.env.BASE_URL}login`;
+  window.location.href = loginUrl;
+};
+
+const getRequestHeaders = (overrides?: HeadersInit): HeadersInit => {
+  const merged: Record<string, string> = {
+    ...(getAuthHeaders() as Record<string, string>),
+    ...(import.meta.env.DEV ? { 'X-Origin': 'admin.trio.am' } : {}),
+  };
+  if (overrides) {
+    if (overrides instanceof Headers) {
+      overrides.forEach((value, key) => {
+        merged[key] = value;
+      });
+    } else if (Array.isArray(overrides)) {
+      for (const [key, value] of overrides) merged[key] = value;
+    } else {
+      Object.assign(merged, overrides);
+    }
+  }
+  return merged;
 };
 
 export const realApiFetch = async (
@@ -22,10 +42,7 @@ export const realApiFetch = async (
   const response = await fetch(url, {
     ...options,
     credentials: 'include', // Important: include cookies in all requests
-    headers: {
-      ...getAuthHeaders(),
-      ...options.headers,
-    },
+    headers: getRequestHeaders(options.headers),
   });
 
   // Handle 401 Unauthorized - redirect to login

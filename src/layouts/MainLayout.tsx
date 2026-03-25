@@ -166,7 +166,7 @@ export const MainLayout = () => {
       <Toolbar sx={{ justifyContent: 'center', gap: 1 }}>
         <Box
           component="img"
-          src="/logo.svg"
+          src={`${import.meta.env.BASE_URL}logo.svg`}
           alt="TRIO Admin Logo"
           sx={{ height: 32, width: 'auto' }}
         />
@@ -190,7 +190,7 @@ export const MainLayout = () => {
           ml: { sm: `${DRAWER_WIDTH}px` },
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ flexWrap: 'wrap', py: { xs: 1, sm: 0 }, gap: 1 }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"

@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useSnackbar } from 'notistack';
 import { Box, Typography, Alert } from '@mui/material';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import { Add as AddIcon, Edit as EditIcon, FilterList as FilterListIcon } from '@mui/icons-material';
 import { dictionariesApi } from '../../api/endpoints';
 import { getDictionaryTitle } from '../../utils/dictionaryUtils';
@@ -41,10 +41,10 @@ import { logger } from '../../utils/logger';
 // Form dialog
 import { DictionaryFormDialog } from '../../components/dictionaries/DictionaryFormDialog';
 
-export const DictionariesPage = () => {
+const DictionariesPageInner = () => {
   const { dictKey } = useParams<{ dictKey: DictionaryKey }>();
   const { t, i18n } = useTranslation();
-  const { enqueueSnackbar } = useSnackbar();
+  const { showError, showSuccess } = useAppSnackbar();
 
   // State for items and related data
   const [items, setItems] = useState<DictionaryItemType[]>([]);
@@ -75,6 +75,10 @@ export const DictionariesPage = () => {
     },
     [dictKey]
   );
+
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
 
   // Fetch countries for cities view
   const { data: countries } = useFetch<Country[]>(
@@ -189,7 +193,7 @@ export const DictionariesPage = () => {
     },
     onSuccess: async () => {
       await loadData();
-      enqueueSnackbar(t('common.updatedSuccessfully'), { variant: 'success' });
+      showSuccess(t('common.updatedSuccessfully'));
     },
     getItemName: getDisplayName,
     translationKeys: {
@@ -263,7 +267,7 @@ export const DictionariesPage = () => {
       label: t('common.actions'),
       width: 150,
       render: (item) => (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Switch
             checked={!item.isBlocked}
             onChange={() => handleBlockToggle(item)}
@@ -290,14 +294,12 @@ export const DictionariesPage = () => {
     );
   }
 
-  const error = fetchError?.message || null;
-
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Typography variant="h4">{getDictionaryTitle(dictKey)}</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button
             variant="outlined"
             startIcon={<FilterListIcon />}
@@ -310,13 +312,6 @@ export const DictionariesPage = () => {
           </Button>
         </Box>
       </Box>
-
-      {/* Error Alert */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
 
       {/* Data Table */}
       <DataTable
@@ -371,4 +366,9 @@ export const DictionariesPage = () => {
       />
     </Box>
   );
+};
+
+export const DictionariesPage = () => {
+  const { dictKey } = useParams<{ dictKey: DictionaryKey }>();
+  return <DictionariesPageInner key={dictKey} />;
 };

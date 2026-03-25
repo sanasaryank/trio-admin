@@ -4,7 +4,7 @@ import { parseApiError } from '../errors';
 import { env } from '../../config/env';
 import { logger } from '../../utils/logger';
 
-const AUTH_BASE_URL = `${env.apiBaseUrl}/admin/auth`;
+const AUTH_BASE_URL = env.apiBaseUrl;
 
 export const realAuthApi = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -18,6 +18,7 @@ export const realAuthApi = {
       headers: {
         'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/json',
+        ...(import.meta.env.DEV ? { 'X-Origin': 'admin.trio.am' } : {}),
       },
       credentials: 'include', // Important: include cookies in request
     });

@@ -40,3 +40,6 @@ export type { ActionMenuProps, MenuItemConfig } from './ActionMenu';
 
 export { default as ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps } from './ConfirmDialog';
+
+export { FormDialogLayout, dialogLayout } from './FormDialogLayout';
+export type { FormDialogLayoutProps } from './FormDialogLayout';

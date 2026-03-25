@@ -215,8 +215,9 @@
   },
   "pagination": {
     "rowsPerPage": "Տողեր էջում:",
-    "of": "՝ից",
-    "displayedRows": "{{from}}–{{to}} {{of}} {{count}}"
+    "of": "-ից",
+    "displayedRows": "{{from}}–{{to}}-ը {{count}}-ից",
+    "displayedRowsMore": "{{from}}–{{to}}-ը ավելի քան {{to}}-ից"
   },
   "status": {
     "active": "Ակտիվ",

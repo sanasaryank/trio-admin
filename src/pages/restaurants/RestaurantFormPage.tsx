@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Box, Paper, Typography, Alert, Divider, Grid, InputAdornment } from '@mui/material';
+import { Box, Paper, Typography, Divider, Grid, InputAdornment } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 // API
@@ -27,6 +27,8 @@ import { useFetch, useFormSubmit, useRestaurantDictionaries } from '../../hooks'
 
 // Utils
 import { logger } from '../../utils/logger';
+import { scrollToFirstError } from '../../utils/scrollToFirstError';
+import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import { getDisplayName } from '../../utils/dictionaryUtils';
 
 const createRestaurantSchema = (t: (key: string) => string) => z.object({
@@ -87,15 +89,21 @@ const createRestaurantSchema = (t: (key: string) => string) => z.object({
 
 type RestaurantFormValues = z.infer<ReturnType<typeof createRestaurantSchema>>;
 
+export interface RestaurantFormHandle {
+  submit: () => void;
+}
+
 interface RestaurantFormPageProps {
   onClose?: () => void;
   restaurantId?: string;
   isDialog?: boolean;
-  onSubmitCallback?: (handler: () => void) => void;
   onSubmittingChange?: (isSubmitting: boolean) => void;
 }
 
-export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, onSubmitCallback, onSubmittingChange }: RestaurantFormPageProps = {}) => {
+export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFormPageProps>(function RestaurantFormPage(
+  { onClose, restaurantId, isDialog = false, onSubmittingChange },
+  ref
+) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: routeId } = useParams<{ id: string }>();
@@ -106,8 +114,8 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
   const prevCityIdRef = useRef<string>('');
   const restaurantHashRef = useRef<string | undefined>(undefined);
 
-  // Form submission hook
-  const { isSubmitting, error: submitError, handleSubmit: handleFormSubmit } = useFormSubmit<RestaurantFormValues>();
+  const { showError } = useAppSnackbar();
+  const { isSubmitting, handleSubmit: handleFormSubmit } = useFormSubmit<RestaurantFormValues>({ onError: showError });
 
   // Create schema with translations
   const restaurantSchema = useMemo(() => createRestaurantSchema(t), [t]);
@@ -158,6 +166,10 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
   const changePassword = watch('connectionData.changePassword');
   const currentLat = watch('lat');
   const currentLng = watch('lng');
+  const currentTypeId = watch('typeId') || [];
+  const currentPriceSegmentId = watch('priceSegmentId') || [];
+  const currentMenuTypeId = watch('menuTypeId') || [];
+  const currentIntegrationTypeId = watch('integrationTypeId');
 
   // Fetch restaurant data in edit mode
   const {
@@ -413,25 +425,27 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
     [setValue]
   );
 
-  // Notify parent about submit handler - only once when dialog is opened
-  const submitCallbackRef = useRef(onSubmitCallback);
-  submitCallbackRef.current = onSubmitCallback;
+  const onInvalid = useCallback((errors: FieldErrors<RestaurantFormValues>) => {
+    scrollToFirstError(errors);
+  }, []);
 
-  useEffect(() => {
-    if (isDialog && submitCallbackRef.current) {
-      submitCallbackRef.current(handleSubmit(onSubmit));
-    }
-  }, [isDialog]); // Only run when dialog opens
+  useImperativeHandle(ref, () => ({
+    submit: () => {
+      handleSubmit(onSubmit, onInvalid)();
+    },
+  }), [handleSubmit, onSubmit, onInvalid]);
 
-  // Notify parent about submitting state changes
   const submittingChangeRef = useRef(onSubmittingChange);
   submittingChangeRef.current = onSubmittingChange;
-
   useEffect(() => {
     if (isDialog && submittingChangeRef.current) {
       submittingChangeRef.current(isSubmitting);
     }
   }, [isDialog, isSubmitting]);
+
+  useEffect(() => {
+    if (fetchError) showError(fetchError.message);
+  }, [fetchError, showError]);
 
   // Prepare select options
   const countryOptions = useMemo(
@@ -459,36 +473,41 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
   );
 
   const restaurantTypeOptions = useMemo(
-    () => [
-      ...restaurantTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
-    ],
-    [restaurantTypes]
+    () =>
+      restaurantTypes
+        .filter((type) => !type.isBlocked || currentTypeId.includes(String(type.id)))
+        .map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
+    [restaurantTypes, currentTypeId]
   );
 
   const priceSegmentOptions = useMemo(
-    () => [
-      ...priceSegments.map((segment) => ({ value: String(segment.id), label: getDisplayName(segment.name) })),
-    ],
-    [priceSegments]
+    () =>
+      priceSegments
+        .filter((segment) => !segment.isBlocked || currentPriceSegmentId.includes(String(segment.id)))
+        .map((segment) => ({ value: String(segment.id), label: getDisplayName(segment.name) })),
+    [priceSegments, currentPriceSegmentId]
   );
 
   const menuTypeOptions = useMemo(
-    () => [
-      ...menuTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
-    ],
-    [menuTypes]
+    () =>
+      menuTypes
+        .filter((type) => !type.isBlocked || currentMenuTypeId.includes(String(type.id)))
+        .map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
+    [menuTypes, currentMenuTypeId]
   );
 
   const integrationTypeOptions = useMemo(
-    () => [
-      { value: '', label: t('restaurants.selectType') },
-      ...integrationTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
-    ],
-    [integrationTypes, t]
+    () =>
+      integrationTypes
+        .filter((type) => !type.isBlocked || currentIntegrationTypeId === String(type.id))
+        .map((type) => ({
+          value: String(type.id),
+          label: getDisplayName(type.name),
+        })),
+    [integrationTypes, currentIntegrationTypeId]
   );
 
   const isLoading = isFetchingRestaurant || isFetchingDictionaries;
-  const error = fetchError?.message || submitError;
 
   if (isLoading) {
     return <LoadingOverlay loading={true} message={t('common.loadingData')} />;
@@ -496,13 +515,7 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
 
   const formContent = (
     <>
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
           <Typography variant="h6" gutterBottom>
             {t('restaurants.basicInfo')}
           </Typography>
@@ -855,4 +868,4 @@ export const RestaurantFormPage = ({ onClose, restaurantId, isDialog = false, on
       </Paper>
     </Box>
   );
-};
+});

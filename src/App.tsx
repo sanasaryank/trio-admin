@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CssBaseline, ThemeProvider, Box, CircularProgress } from '@mui/material';
-import { SnackbarProvider } from 'notistack';
+import { AppSnackbarProvider } from './providers/AppSnackbarProvider';
 import { theme } from './theme';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
@@ -46,15 +46,8 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <SnackbarProvider
-          maxSnack={3}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          autoHideDuration={3000}
-        >
-          <BrowserRouter>
+        <AppSnackbarProvider>
+          <BrowserRouter basename={import.meta.env.VITE_BASE_PATH}>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
@@ -151,7 +144,7 @@ function App() {
               </Routes>
             </Suspense>
           </BrowserRouter>
-        </SnackbarProvider>
+        </AppSnackbarProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

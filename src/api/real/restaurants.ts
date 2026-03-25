@@ -2,8 +2,8 @@ import type { Restaurant, RestaurantListItem, RestaurantFormData, QRCode, QRBatc
 import { realApiFetch } from './client';
 import { env } from '../../config/env';
 
-const RESTAURANTS_BASE_URL = `${env.apiBaseUrl}/admin/restaurants`;
-const LOCATIONS_BASE_URL = `${env.apiBaseUrl}/admin/locations`;
+const RESTAURANTS_BASE_URL = `${env.apiBaseUrl}/placements`;
+const LOCATIONS_BASE_URL = `${env.apiBaseUrl}/locations`;
 
 export const realRestaurantsApi = {
   list: async (): Promise<RestaurantListItem[]> => {
