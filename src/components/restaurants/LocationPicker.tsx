@@ -212,6 +212,7 @@ export const LocationPicker = React.memo<LocationPickerProps>(
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
     const [showResults, setShowResults] = useState(false);
+    const skipNextSearchRef = useRef(false);
 
     // Update position when props change
     useEffect(() => {
@@ -332,23 +333,25 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       updateAddress(result.lat, result.lng);
       setSearchResults([]);
       setShowResults(false);
+      skipNextSearchRef.current = true;
       setSearchQuery(result.display_name);
     }, [onChange, updateAddress]);
 
     /**
      * Handle address search
      */
-    const handleSearch = useCallback(async () => {
-      if (!searchQuery.trim()) return;
+    const handleSearch = useCallback(async (query: string) => {
+      if (!query.trim() || query.length < 3) {
+        setSearchResults([]);
+        setShowResults(false);
+        return;
+      }
 
       setIsSearching(true);
-      setShowResults(false);
 
-      const results = await forwardGeocode(searchQuery);
+      const results = await forwardGeocode(query);
 
-      if (results.length === 1) {
-        handleSelectResult(results[0]);
-      } else if (results.length > 1) {
+      if (results.length > 0) {
         setSearchResults(results);
         setShowResults(true);
       } else {
@@ -357,15 +360,34 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       }
 
       setIsSearching(false);
-    }, [searchQuery, handleSelectResult]);
+    }, []);
+
+    // Debounced search when query changes
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        if (skipNextSearchRef.current) {
+          skipNextSearchRef.current = false;
+          return;
+        }
+
+        if (searchQuery.trim().length >= 3) {
+          handleSearch(searchQuery);
+        } else {
+          setSearchResults([]);
+          setShowResults(false);
+        }
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }, [searchQuery, handleSearch]);
 
     /**
-     * Handle key press in search field (Enter to search)
+     * Handle key press in search field (Enter to search immediately)
      */
     const handleKeyPress = (e: React.KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        handleSearch();
+        handleSearch(searchQuery);
       }
     };
 
