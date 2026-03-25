@@ -85,7 +85,9 @@ const Pagination: React.FC<PaginationProps> = React.memo(({
       rowsPerPageOptions={rowsPerPageOptions}
       labelRowsPerPage={t('pagination.rowsPerPage')}
       labelDisplayedRows={({ from, to, count }) =>
-        `${from}–${to} ${t('pagination.of')} ${count !== -1 ? count : `${t('pagination.moreThan')} ${to}`}`
+        count !== -1
+          ? t('pagination.displayedRows', { from, to, count })
+          : t('pagination.displayedRowsMore', { from, to })
       }
     />
   );
