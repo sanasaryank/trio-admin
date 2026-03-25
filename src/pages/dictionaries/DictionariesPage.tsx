@@ -41,7 +41,7 @@ import { logger } from '../../utils/logger';
 // Form dialog
 import { DictionaryFormDialog } from '../../components/dictionaries/DictionaryFormDialog';
 
-export const DictionariesPage = () => {
+const DictionariesPageInner = () => {
   const { dictKey } = useParams<{ dictKey: DictionaryKey }>();
   const { t, i18n } = useTranslation();
   const { showError, showSuccess } = useAppSnackbar();
@@ -366,4 +366,9 @@ export const DictionariesPage = () => {
       />
     </Box>
   );
+};
+
+export const DictionariesPage = () => {
+  const { dictKey } = useParams<{ dictKey: DictionaryKey }>();
+  return <DictionariesPageInner key={dictKey} />;
 };
