@@ -166,6 +166,10 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
   const changePassword = watch('connectionData.changePassword');
   const currentLat = watch('lat');
   const currentLng = watch('lng');
+  const currentTypeId = watch('typeId') || [];
+  const currentPriceSegmentId = watch('priceSegmentId') || [];
+  const currentMenuTypeId = watch('menuTypeId') || [];
+  const currentIntegrationTypeId = watch('integrationTypeId');
 
   // Fetch restaurant data in edit mode
   const {
@@ -469,33 +473,38 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
   );
 
   const restaurantTypeOptions = useMemo(
-    () => [
-      ...restaurantTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
-    ],
-    [restaurantTypes]
+    () =>
+      restaurantTypes
+        .filter((type) => !type.isBlocked || currentTypeId.includes(String(type.id)))
+        .map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
+    [restaurantTypes, currentTypeId]
   );
 
   const priceSegmentOptions = useMemo(
-    () => [
-      ...priceSegments.map((segment) => ({ value: String(segment.id), label: getDisplayName(segment.name) })),
-    ],
-    [priceSegments]
+    () =>
+      priceSegments
+        .filter((segment) => !segment.isBlocked || currentPriceSegmentId.includes(String(segment.id)))
+        .map((segment) => ({ value: String(segment.id), label: getDisplayName(segment.name) })),
+    [priceSegments, currentPriceSegmentId]
   );
 
   const menuTypeOptions = useMemo(
-    () => [
-      ...menuTypes.map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
-    ],
-    [menuTypes]
+    () =>
+      menuTypes
+        .filter((type) => !type.isBlocked || currentMenuTypeId.includes(String(type.id)))
+        .map((type) => ({ value: String(type.id), label: getDisplayName(type.name) })),
+    [menuTypes, currentMenuTypeId]
   );
 
   const integrationTypeOptions = useMemo(
     () =>
-      integrationTypes.map((type) => ({
-        value: String(type.id),
-        label: getDisplayName(type.name),
-      })),
-    [integrationTypes]
+      integrationTypes
+        .filter((type) => !type.isBlocked || currentIntegrationTypeId === String(type.id))
+        .map((type) => ({
+          value: String(type.id),
+          label: getDisplayName(type.name),
+        })),
+    [integrationTypes, currentIntegrationTypeId]
   );
 
   const isLoading = isFetchingRestaurant || isFetchingDictionaries;
