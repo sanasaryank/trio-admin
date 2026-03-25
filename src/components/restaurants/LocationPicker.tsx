@@ -438,9 +438,6 @@ export const LocationPicker = React.memo<LocationPickerProps>(
                             <CloseIcon fontSize="small" />
                           </IconButton>
                         )}
-                        <IconButton size="small" onClick={handleSearch} disabled={!searchQuery.trim()}>
-                          <SearchIcon fontSize="small" />
-                        </IconButton>
                       </>
                     )}
                   </InputAdornment>
