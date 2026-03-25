@@ -267,7 +267,7 @@ const DictionariesPageInner = () => {
       label: t('common.actions'),
       width: 150,
       render: (item) => (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Switch
             checked={!item.isBlocked}
             onChange={() => handleBlockToggle(item)}
@@ -297,9 +297,9 @@ const DictionariesPageInner = () => {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Typography variant="h4">{getDictionaryTitle(dictKey)}</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button
             variant="outlined"
             startIcon={<FilterListIcon />}

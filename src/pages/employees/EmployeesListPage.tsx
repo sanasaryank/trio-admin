@@ -195,7 +195,7 @@ export const EmployeesListPage = () => {
         label: t('common.actions'),
         width: 200,
         render: (employee) => (
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             <Switch
               checked={!employee.isBlocked}
               onChange={() => handleBlockToggle(employee)}
@@ -237,10 +237,12 @@ export const EmployeesListPage = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           mb: 3,
+          flexWrap: 'wrap',
+          gap: 2,
         }}
       >
         <Typography variant="h4">{t('employees.title')}</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button
             variant="outlined"
             startIcon={<FilterListIcon />}

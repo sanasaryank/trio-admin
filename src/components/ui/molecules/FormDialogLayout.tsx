@@ -26,6 +26,8 @@ export const dialogLayout = {
     borderBottom: '1px solid',
     borderColor: 'divider',
     flexShrink: 0,
+    flexWrap: 'wrap',
+    gap: 1,
   },
   closeButton: {
     color: 'text.secondary',
@@ -49,6 +51,7 @@ export const dialogLayout = {
     display: 'flex',
     justifyContent: 'flex-end',
     gap: 2,
+    flexWrap: 'wrap',
   },
 } as const;
 
