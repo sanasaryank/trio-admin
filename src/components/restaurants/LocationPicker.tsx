@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, TextField, InputAdornment, IconButton, CircularProgress } from '@mui/material';
+import { Search as SearchIcon, Close as CloseIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { env } from '../../config/env';
@@ -67,11 +69,65 @@ const MapCenterUpdater = React.memo<{ position: [number, number] }>(({ position 
 MapCenterUpdater.displayName = 'MapCenterUpdater';
 
 /**
- * Reverse geocode coordinates to get address and location metadata using Nominatim API
- * Note: May fail due to CORS restrictions in development (localhost)
+ * Shared state for rate limiting Nominatim API requests
  */
 let lastGeocodingTime = 0;
 
+/**
+ * Respect Nominatim rate limit (1 request per second)
+ */
+const respectRateLimit = async () => {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastGeocodingTime;
+  if (timeSinceLastRequest < 1000) {
+    await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastRequest));
+  }
+  lastGeocodingTime = Date.now();
+};
+
+interface GeocodingResult {
+  lat: number;
+  lng: number;
+  display_name: string;
+}
+
+/**
+ * Geocode address to coordinates using Nominatim API returning multiple results
+ */
+const forwardGeocode = async (query: string): Promise<GeocodingResult[]> => {
+  try {
+    await respectRateLimit();
+    
+    // Add country code hint for better results if needed, but keeping it general for now
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10`,
+      {
+        headers: {
+          'Accept-Language': 'hy',
+          'User-Agent': 'TrioSuperAdmin/1.0.0 (contact: admin@trio.am)',
+        },
+      }
+    );
+
+    if (!response.ok) return [];
+    const data = await response.json();
+    if (!data || data.length === 0) return [];
+
+    return data.map((item: any) => ({
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      display_name: item.display_name,
+    }));
+  } catch (error) {
+    logger.error('Forward geocoding failed', error as Error);
+    return [];
+  }
+};
+
+/**
+ * Reverse geocode coordinates to get address and location metadata using Nominatim API
+ * Note: May fail due to CORS restrictions in development (localhost)
+ */
 const reverseGeocode = async (
   lat: number,
   lng: number
@@ -81,13 +137,7 @@ const reverseGeocode = async (
   district: string | null;
 }> => {
   try {
-    // Respect Nominatim rate limit (1 request per second)
-    const now = Date.now();
-    const timeSinceLastRequest = now - lastGeocodingTime;
-    if (timeSinceLastRequest < 1000) {
-      await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastRequest));
-    }
-    lastGeocodingTime = Date.now();
+    await respectRateLimit();
 
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
@@ -118,7 +168,6 @@ const reverseGeocode = async (
     }
 
     // Extract city (marz/province) and district
-    // For Armenia: state/county = marz (e.g., "Երևան"), suburb/neighbourhood = district
     const city = address.state || address.county || address.city || address.town || address.village || null;
     const district =
       address.suburb ||
@@ -149,7 +198,9 @@ const reverseGeocode = async (
  */
 export const LocationPicker = React.memo<LocationPickerProps>(
   ({ lat, lng, onChange, onAddressChange, onLocationMetadataChange, cities, districts }) => {
+    const { t } = useTranslation();
     const markerRef = useRef<L.Marker>(null);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
     
     // Use default center (Yerevan) if coordinates are 0,0 or invalid
     const isValidCoordinates = lat !== 0 && lng !== 0 && lat !== null && lng !== null;
@@ -157,6 +208,10 @@ export const LocationPicker = React.memo<LocationPickerProps>(
     
     const [position, setPosition] = useState<[number, number]>(initialPosition);
     const [isGeocoding, setIsGeocoding] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
+    const [showResults, setShowResults] = useState(false);
 
     // Update position when props change
     useEffect(() => {
@@ -164,39 +219,43 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       setPosition(isValid ? [lat, lng] : DEFAULT_CENTER);
     }, [lat, lng]);
 
+    // Close results when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+          setShowResults(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     /**
      * Normalize location name for comparison
-     * Handles multi-word names with various separators like "Նորք Մարաշ", "Նորք-Մարաշ", "Նորք - Մարաշ"
      */
     const normalizeLocationName = (name: string): string => {
       return name
         .toLowerCase()
         .trim()
-        // Normalize hyphens: replace " - " and "-" with a single space
         .replace(/\s*-\s*/g, ' ')
-        // Normalize multiple spaces to single space
         .replace(/\s+/g, ' ');
     };
 
     /**
      * Check if two location names match
-     * Handles variations in spacing and hyphenation
      */
     const namesMatch = (name1: string, name2: string): boolean => {
       const normalized1 = normalizeLocationName(name1);
       const normalized2 = normalizeLocationName(name2);
 
-      // Exact match after normalization
       if (normalized1 === normalized2) return true;
 
-      // Check if all words from one name appear in the other (in order)
       const words1 = normalized1.split(' ').filter((w) => w.length > 0);
       const words2 = normalized2.split(' ').filter((w) => w.length > 0);
 
-      // Both must have the same number of words for a match
-      if (words1.length !== words2.length) return false;
+      if (words1.length !== words2.length || words1.length === 0) return false;
 
-      // All words must match in the same order
       return words1.every((word, index) => word === words2[index]);
     };
 
@@ -210,15 +269,12 @@ export const LocationPicker = React.memo<LocationPickerProps>(
         let matchedCityId: string | undefined;
         let matchedDistrictId: string | undefined;
 
-        // Try to find matching city
         if (cityName) {
           const matchedCity = cities.find((c) => namesMatch(c.name, cityName));
           matchedCityId = matchedCity?.id;
         }
 
-        // Try to find matching district
         if (districtName) {
-          // First try to find district within matched city
           if (matchedCityId) {
             const matchedDistrict = districts.find(
               (d) => d.cityId === matchedCityId && namesMatch(d.name, districtName)
@@ -226,7 +282,6 @@ export const LocationPicker = React.memo<LocationPickerProps>(
             matchedDistrictId = matchedDistrict?.id;
           }
           
-          // If not found and no city matched, search all districts
           if (!matchedDistrictId && !matchedCityId) {
             const matchedDistrict = districts.find((d) => namesMatch(d.name, districtName));
             if (matchedDistrict) {
@@ -268,72 +323,200 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       [onAddressChange, onLocationMetadataChange, findMatchingLocation]
     );
 
-  /**
-   * Handle marker drag end event
-   */
-  const handleDragEnd = useCallback(() => {
-    const marker = markerRef.current;
-    if (marker) {
-      const newPos = marker.getLatLng();
-      setPosition([newPos.lat, newPos.lng]);
-      onChange(newPos.lat, newPos.lng);
-      updateAddress(newPos.lat, newPos.lng);
-    }
-  }, [onChange, updateAddress]);
+    /**
+     * Handle result selection
+     */
+    const handleSelectResult = useCallback((result: GeocodingResult) => {
+      setPosition([result.lat, result.lng]);
+      onChange(result.lat, result.lng);
+      updateAddress(result.lat, result.lng);
+      setSearchResults([]);
+      setShowResults(false);
+      setSearchQuery(result.display_name);
+    }, [onChange, updateAddress]);
 
-  /**
-   * Handle map click event
-   */
-  const handleMapClick = useCallback(
-    (newLat: number, newLng: number) => {
-      setPosition([newLat, newLng]);
-      onChange(newLat, newLng);
-      updateAddress(newLat, newLng);
-    },
-    [onChange, updateAddress]
-  );
+    /**
+     * Handle address search
+     */
+    const handleSearch = useCallback(async () => {
+      if (!searchQuery.trim()) return;
 
-  /**
-   * Formatted coordinate string
-   */
-  const coordinatesText = useMemo(
-    () => `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`,
-    [position]
-  );
+      setIsSearching(true);
+      setShowResults(false);
 
-  return (
-    <Box>
-      <MapContainer
-        center={position}
-        zoom={13}
-        style={{ height: '400px', width: '100%' }}
-        scrollWheelZoom={false}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker
-          ref={markerRef}
-          position={position}
-          draggable={true}
-          eventHandlers={{
-            dragend: handleDragEnd,
-          }}
-        />
-        <MapClickHandler onChange={handleMapClick} />
-        <MapCenterUpdater position={position} />
-      </MapContainer>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-        Координаты: {coordinatesText}
-        {isGeocoding && ' (получение адреса...)'}
-      </Typography>
-      <Typography variant="caption" color="text.secondary">
-        Кликните на карту или перетащите маркер для выбора местоположения
-        {onAddressChange && ' (адрес обновится автоматически)'}. Для зума используйте кнопки + / - на карте.
-      </Typography>
-    </Box>
-  );
-});
+      const results = await forwardGeocode(searchQuery);
+
+      if (results.length === 1) {
+        handleSelectResult(results[0]);
+      } else if (results.length > 1) {
+        setSearchResults(results);
+        setShowResults(true);
+      } else {
+        setSearchResults([]);
+        setShowResults(false);
+      }
+
+      setIsSearching(false);
+    }, [searchQuery, handleSelectResult]);
+
+    /**
+     * Handle key press in search field (Enter to search)
+     */
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSearch();
+      }
+    };
+
+    /**
+     * Handle marker drag end event
+     */
+    const handleDragEnd = useCallback(() => {
+      const marker = markerRef.current;
+      if (marker) {
+        const newPos = marker.getLatLng();
+        setPosition([newPos.lat, newPos.lng]);
+        onChange(newPos.lat, newPos.lng);
+        updateAddress(newPos.lat, newPos.lng);
+      }
+    }, [onChange, updateAddress]);
+
+    /**
+     * Handle map click event
+     */
+    const handleMapClick = useCallback(
+      (newLat: number, newLng: number) => {
+        setPosition([newLat, newLng]);
+        onChange(newLat, newLng);
+        updateAddress(newLat, newLng);
+      },
+      [onChange, updateAddress]
+    );
+
+    /**
+     * Formatted coordinate string
+     */
+    const coordinatesText = useMemo(
+      () => `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`,
+      [position]
+    );
+
+    return (
+      <Box>
+        {/* Address Search */}
+        <Box ref={searchContainerRef} sx={{ mb: 2, position: 'relative' }}>
+          <TextField
+              fullWidth
+              variant="outlined"
+              size="small"
+              placeholder={t('restaurants.enterAddress')}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (showResults) setShowResults(false);
+              }}
+              onKeyPress={handleKeyPress}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {isSearching ? (
+                      <CircularProgress size={20} />
+                    ) : (
+                      <>
+                        {searchQuery && (
+                          <IconButton size="small" onClick={() => {
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setShowResults(false);
+                          }}>
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        <IconButton size="small" onClick={handleSearch} disabled={!searchQuery.trim()}>
+                          <SearchIcon fontSize="small" />
+                        </IconButton>
+                      </>
+                    )}
+                  </InputAdornment>
+                ),
+              }}
+            />
+            
+            {showResults && searchResults.length > 0 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  zIndex: 1000,
+                  mt: 0.5,
+                  bgcolor: 'background.paper',
+                  boxShadow: 3,
+                  borderRadius: 1,
+                  maxHeight: 300,
+                  overflowY: 'auto',
+                }}
+              >
+                {searchResults.map((result, index) => (
+                  <Box
+                    key={index}
+                    onClick={() => handleSelectResult(result)}
+                    sx={{
+                      p: 1.5,
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.hover' },
+                      borderBottom: index < searchResults.length - 1 ? '1px solid' : 'none',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Typography variant="body2">{result.display_name}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+        </Box>
+
+        <MapContainer
+          center={position}
+          zoom={13}
+          style={{ height: '400px', width: '100%', borderRadius: '8px' }}
+          scrollWheelZoom={false}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <Marker
+            ref={markerRef}
+            position={position}
+            draggable={true}
+            eventHandlers={{
+              dragend: handleDragEnd,
+            }}
+          />
+          <MapClickHandler onChange={handleMapClick} />
+          <MapCenterUpdater position={position} />
+        </MapContainer>
+        
+        <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="body2" color="text.secondary">
+            {t('common.coordinates')}: {coordinatesText}
+            {isGeocoding && ` (${t('common.loading')}...)`}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {t('restaurants.locationPickerHint')}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+);
 
 LocationPicker.displayName = 'LocationPicker';
