@@ -152,8 +152,13 @@ function useTableState<T>({
   const handleSort = useCallback(
     (column: keyof T) => {
       if (sortColumn === column) {
-        // Toggle direction if same column
-        setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+        // Toggle direction if same column, or reset to default on third click
+        if (sortDirection === 'asc') {
+          setSortDirection('desc');
+        } else {
+          setSortColumn(defaultSortColumn ?? null);
+          setSortDirection(defaultSortDirection ?? 'asc');
+        }
       } else {
         // Set new column with default direction
         setSortColumn(column);
@@ -161,7 +166,7 @@ function useTableState<T>({
       }
       setPage(0); // Reset to first page
     },
-    [sortColumn]
+    [sortColumn, sortDirection, defaultSortColumn, defaultSortDirection]
   );
 
   return {
