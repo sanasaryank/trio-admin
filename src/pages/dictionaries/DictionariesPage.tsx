@@ -62,6 +62,15 @@ const DictionariesPageInner = () => {
     status: 'active',
   });
 
+  // Temporary filters for drawer
+  const {
+    filters: tempFilters,
+    updateFilter: updateTempFilter,
+    resetFilters: resetTempFilters,
+  } = useFilters<DictionaryFilters>({
+    status: 'active',
+  });
+
   // Fetch main data
   const {
     data: fetchedItems,
@@ -175,14 +184,28 @@ const DictionariesPageInner = () => {
 
   // Event handlers
   const handleApplyFilters = useCallback(() => {
-    filterDrawer.close();
+    Object.keys(tempFilters).forEach((key) => {
+      updateFilter(key as keyof DictionaryFilters, tempFilters[key as keyof DictionaryFilters]);
+    });
     tableState.handlePageChange(0);
-  }, [filterDrawer, tableState]);
+    filterDrawer.close();
+  }, [tempFilters, updateFilter, tableState, filterDrawer]);
 
   const handleResetFilters = useCallback(() => {
     resetFilters();
+    resetTempFilters();
     tableState.handlePageChange(0);
-  }, [resetFilters, tableState]);
+    filterDrawer.close();
+  }, [resetFilters, resetTempFilters, tableState, filterDrawer]);
+
+  // Sync temp filters when drawer opens
+  useEffect(() => {
+    if (filterDrawer.isOpen) {
+      Object.keys(filters).forEach((key) => {
+        updateTempFilter(key as keyof DictionaryFilters, filters[key as keyof DictionaryFilters]);
+      });
+    }
+  }, [filterDrawer.isOpen, filters, updateTempFilter]);
 
   // Handle block/unblock toggle using reusable hook
   const handleBlockToggle = useBlockToggle({
@@ -347,8 +370,8 @@ const DictionariesPageInner = () => {
         <Select
           name="status"
           label={t('common.status')}
-          value={filters.status}
-          onChange={(value) => updateFilter('status', value as 'active' | 'blocked' | 'all')}
+          value={tempFilters.status}
+          onChange={(value) => updateTempFilter('status', value as 'active' | 'blocked' | 'all')}
           options={getStatusFilterOptions(t)}
         />
       </FilterDrawer>
