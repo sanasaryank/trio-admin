@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Tooltip } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -204,7 +204,7 @@ export const RestaurantsListPage = () => {
 
       // Restaurant type filter
       if (currentFilters.typeId && currentFilters.typeId.length > 0) {
-        const hasMatchingType = currentFilters.typeId.some(typeId => 
+        const hasMatchingType = currentFilters.typeId.some(typeId =>
           restaurant.typeId.includes(typeId)
         );
         if (!hasMatchingType) return false;
@@ -212,7 +212,7 @@ export const RestaurantsListPage = () => {
 
       // Price segment filter
       if (currentFilters.priceSegmentId && currentFilters.priceSegmentId.length > 0) {
-        const hasMatchingSegment = currentFilters.priceSegmentId.some(segmentId => 
+        const hasMatchingSegment = currentFilters.priceSegmentId.some(segmentId =>
           restaurant.priceSegmentId.includes(segmentId)
         );
         if (!hasMatchingSegment) return false;
@@ -220,7 +220,7 @@ export const RestaurantsListPage = () => {
 
       // Menu type filter
       if (currentFilters.menuTypeId && currentFilters.menuTypeId.length > 0) {
-        const hasMatchingMenuType = currentFilters.menuTypeId.some(menuTypeId => 
+        const hasMatchingMenuType = currentFilters.menuTypeId.some(menuTypeId =>
           restaurant.menuTypeId.includes(menuTypeId)
         );
         if (!hasMatchingMenuType) return false;
@@ -330,7 +330,7 @@ export const RestaurantsListPage = () => {
   const handleViewAudit = useCallback(
     (restaurant: RestaurantListItem) => {
       const displayName = getDisplayName(restaurant.name);
-      
+
       setAuditState({
         restaurantId: restaurant.id,
         restaurantName: displayName,
@@ -405,7 +405,7 @@ export const RestaurantsListPage = () => {
         sortable: true,
         render: (restaurant) => {
           const displayName = getDisplayName(restaurant.name);
-          
+
           // Only render as link if crmUrl exists
           if (restaurant.crmUrl) {
             return (
@@ -442,11 +442,19 @@ export const RestaurantsListPage = () => {
               gap: 0.5,
             }}
           >
-            <Switch
-              checked={!restaurant.isBlocked}
-              disabled={true}
-              onChange={() => {}}
-            />
+            <Tooltip
+              title={!restaurant.isBlocked ? t('common.active') : t('common.blocked')}
+              placement="top"
+              arrow
+            >
+              <span style={{ display: 'inline-flex' }}>
+                <Switch
+                  checked={!restaurant.isBlocked}
+                  disabled={true}
+                  onChange={() => {}}
+                />
+              </span>
+            </Tooltip>
             <IconButton
               onClick={() => handleEdit(restaurant.id)}
               tooltip={t('common.edit')}
