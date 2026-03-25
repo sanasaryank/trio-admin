@@ -452,7 +452,7 @@ export const LocationPicker = React.memo<LocationPickerProps>(
                   top: '100%',
                   left: 0,
                   right: 0,
-                  zIndex: 1000,
+                  zIndex: 1100,
                   mt: 0.5,
                   bgcolor: 'background.paper',
                   boxShadow: 3,
