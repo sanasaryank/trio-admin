@@ -111,7 +111,7 @@
     "adminPassword": "Ադմինիստրատորի գաղտնաբառ",
     "changeAdminPassword": "Փոխել ադմինիստրատորի գաղտնաբառը",
     "legalAddress": "Իրավական հասցե",
-    "tin": "ՀՀՀ",
+    "tin": "ՀՎՀՀ",
     "connectionData": "Միացման տվյալներ",
     "host": "Հոսթ",
     "port": "Պորտ",
@@ -211,7 +211,7 @@
     "quantityRequired": "Քանակը պարտադիր է",
     "quantityMin": "Նվազագույնը 1",
     "quantityMax": "Առավելագույնը 100",    "typeRequired": "Տեսակը պարտադիր է",    "legalAddressRequired": "Իրավական հասցեն պարտադիր է",
-    "tinRequired": "ՀՀՀ-ն պարտադիր է"
+    "tinRequired": "ՀՎՀՀ-ն պարտադիր է"
   },
   "pagination": {
     "rowsPerPage": "Տողեր էջում:",

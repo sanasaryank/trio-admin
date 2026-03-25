@@ -190,7 +190,7 @@ export const MainLayout = () => {
           ml: { sm: `${DRAWER_WIDTH}px` },
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ flexWrap: 'wrap', py: { xs: 1, sm: 0 }, gap: 1 }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"

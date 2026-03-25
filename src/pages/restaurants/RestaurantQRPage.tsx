@@ -442,8 +442,8 @@ export const RestaurantQRPage = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
           <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBack}>
             {t('common.back')}
           </Button>
@@ -451,7 +451,7 @@ export const RestaurantQRPage = () => {
             {t('restaurants.qrCodesTitle', { name: restaurantName || `#${id}` })}
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button variant="outlined" startIcon={<FilterListIcon />} onClick={filterDrawer.open}>
             {t('common.filters')}
           </Button>

@@ -440,6 +440,7 @@ export const RestaurantsListPage = () => {
               justifyContent: 'flex-end',
               alignItems: 'center',
               gap: 0.5,
+              flexWrap: 'wrap',
             }}
           >
             <Tooltip
@@ -502,9 +503,9 @@ export const RestaurantsListPage = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Typography variant="h4">{t('restaurants.title')}</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button
             variant="outlined"
             startIcon={<FilterListIcon />}
