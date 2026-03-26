@@ -41,12 +41,18 @@ export const realRestaurantsApi = {
   },
 
   block: async (id: string, isBlocked: boolean): Promise<Restaurant> => {
-    const response = await realApiFetch(`${RESTAURANTS_BASE_URL}/${id}/block`, {
-      method: 'PATCH',
-      body: JSON.stringify({ isBlocked }),
-    });
+    const restaurant = await realRestaurantsApi.getById(id);
+    const { id: _, ...data } = restaurant;
 
-    return response.json();
+    return realRestaurantsApi.update(id, {
+      ...data,
+      isBlocked,
+      adminChangePassword: false,
+      connectionData: {
+        ...restaurant.connectionData,
+        changePassword: false,
+      },
+    } as any);
   },
 
   getQRCodes: async (restaurantId: string): Promise<QRCode[]> => {
