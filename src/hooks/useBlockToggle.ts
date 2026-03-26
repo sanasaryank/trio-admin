@@ -26,6 +26,7 @@ interface UseBlockToggleOptions<T extends BlockableItem> {
     blockMessage?: string;
     unblockMessage?: string;
   };
+  messageParams?: Record<string, any>;
   logContext?: string;
 }
 
@@ -43,6 +44,7 @@ export const useBlockToggle = <T extends BlockableItem>({
   onSuccess,
   getItemName,
   translationKeys = {},
+  messageParams = {},
   logContext = 'useBlockToggle',
 }: UseBlockToggleOptions<T>) => {
   const { t } = useTranslation();
@@ -61,8 +63,8 @@ export const useBlockToggle = <T extends BlockableItem>({
       confirmDialog.open({
         title: item.isBlocked ? t(unblockTitle) : t(blockTitle),
         message: item.isBlocked
-          ? t(unblockMessage, { name: itemName })
-          : t(blockMessage, { name: itemName }),
+          ? t(unblockMessage, { name: itemName, ...messageParams })
+          : t(blockMessage, { name: itemName, ...messageParams }),
         confirmText: t('common.confirm'),
         cancelText: t('common.cancel'),
         onConfirm: async () => {
@@ -83,7 +85,7 @@ export const useBlockToggle = <T extends BlockableItem>({
         },
       });
     },
-    [confirmDialog, blockApi, onSuccess, getItemName, t, blockTitle, unblockTitle, blockMessage, unblockMessage, logContext]
+    [confirmDialog, blockApi, onSuccess, getItemName, t, blockTitle, unblockTitle, blockMessage, unblockMessage, messageParams, logContext]
   );
 
   return handleBlockToggle;

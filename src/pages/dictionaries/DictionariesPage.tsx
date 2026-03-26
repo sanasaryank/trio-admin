@@ -225,6 +225,11 @@ const DictionariesPageInner = () => {
       blockMessage: 'dictionaries.blockConfirmMessage',
       unblockMessage: 'dictionaries.unblockConfirmMessage',
     },
+    messageParams: {
+      entity: t(`dictionaries.singular.${dictKey}`, {
+        defaultValue: t('dictionaries.singular.default'),
+      }),
+    },
     logContext: 'DictionariesPage',
   });
 
