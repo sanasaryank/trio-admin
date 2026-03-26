@@ -116,8 +116,9 @@ export const ConnectionDataFields: React.FC<ConnectionDataFieldsProps> = ({
             type="password"
             required={isPasswordRequired}
             disabled={disabled || (isEditMode && !changePassword)}
-          placeholder={passwordPlaceholder}
-        />
+            placeholder={passwordPlaceholder}
+            autoComplete="new-password"
+          />
       </Grid>
     </Grid>
   </>

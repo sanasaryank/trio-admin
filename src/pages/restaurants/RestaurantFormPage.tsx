@@ -515,7 +515,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
 
   const formContent = (
     <>
-      <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
+      <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate autoComplete="off">
           <Typography variant="h6" gutterBottom>
             {t('restaurants.basicInfo')}
           </Typography>
@@ -786,6 +786,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
                 type="password"
                 required={!isEditMode || adminChangePassword}
                 disabled={isSubmitting || (isEditMode && !adminChangePassword)}
+                autoComplete="new-password"
               />
             </Grid>
 
