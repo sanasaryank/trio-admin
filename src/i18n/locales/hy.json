@@ -566,5 +566,36 @@
       "nameRequired": "Անունը պարտադիր է",
       "colorInvalid": "Գույնը պետք է լինի hex ձևաչափով (օր՝ #FF0000)"
     }
+  },
+  "auditLog": {
+    "title": "Գործողությունների մատյան",
+    "noEntries": "Մատյանում գրառումներ չկան",
+    "columns": {
+      "time": "Ժամանակ",
+      "user": "Օգտատեր",
+      "action": "Գործողություն",
+      "details": "Մանրամասներ"
+    },
+    "actions": {
+      "create": "Ստեղծում",
+      "update": "Թարմացում",
+      "block": "Արգելափակում",
+      "unblock": "Ապաարգելափակում",
+      "login": "Մուտք",
+      "logout": "Ելք",
+      "batch_create_qr": "QR կոդերի զանգվածային ստեղծում"
+    },
+    "details": {
+      "name": "Անվանում",
+      "firstName": "Անուն",
+      "lastName": "Ազգանուն",
+      "status": "Կարգավիճակ",
+      "blocked": "Արգելափակված",
+      "active": "Ակտիվ",
+      "cityId": "Քաղաքի ID",
+      "email": "Email",
+      "count": "Քանակ",
+      "qrText": "QR տեքստ"
+    }
   }
 }

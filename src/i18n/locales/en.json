@@ -572,5 +572,36 @@
       "nameRequired": "Name is required",
       "colorInvalid": "Color must be a valid hex color (e.g., #FF0000)"
     }
+  },
+  "auditLog": {
+    "title": "Action Log",
+    "noEntries": "No entries in the log",
+    "columns": {
+      "time": "Time",
+      "user": "User",
+      "action": "Action",
+      "details": "Details"
+    },
+    "actions": {
+      "create": "Creation",
+      "update": "Update",
+      "block": "Block",
+      "unblock": "Unblock",
+      "login": "Login",
+      "logout": "Logout",
+      "batch_create_qr": "Batch QR Creation"
+    },
+    "details": {
+      "name": "Name",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "status": "Status",
+      "blocked": "Blocked",
+      "active": "Active",
+      "cityId": "City ID",
+      "email": "Email",
+      "count": "Count",
+      "qrText": "QR Text"
+    }
   }
 }
