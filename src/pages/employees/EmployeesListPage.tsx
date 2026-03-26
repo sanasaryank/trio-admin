@@ -62,15 +62,13 @@ export const EmployeesListPage = () => {
   }, [fetchError, showError]);
 
   // Filters management
-  const {
-    filters,
-    updateFilter,
-    resetFilters,
-    applyFilters,
-  } = useFilters<EmployeeFilters>({
-    search: '',
-    status: 'active',
-  });
+  const { filters, updateFilter, resetFilters, applyFilters } = useFilters<EmployeeFilters>(
+    {
+      search: '',
+      status: 'active',
+    },
+    'employees'
+  );
 
   // Temporary filters for drawer
   const {

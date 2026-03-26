@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 /**
  * Return type for useFilters hook
@@ -49,9 +49,29 @@ export interface UseFiltersReturn<T> {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function useFilters<T extends Record<string, any>>(
-  initialFilters: T
+  initialFilters: T,
+  persistenceKey?: string
 ): UseFiltersReturn<T> {
-  const [filters, setFilters] = useState<T>(initialFilters);
+  const [filters, setFilters] = useState<T>(() => {
+    if (persistenceKey) {
+      const saved = localStorage.getItem(`filters_${persistenceKey}`);
+      if (saved) {
+        try {
+          return { ...initialFilters, ...JSON.parse(saved) };
+        } catch (error) {
+          return initialFilters;
+        }
+      }
+    }
+    return initialFilters;
+  });
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    if (persistenceKey) {
+      localStorage.setItem(`filters_${persistenceKey}`, JSON.stringify(filters));
+    }
+  }, [filters, persistenceKey]);
 
   const updateFilter = useCallback(<K extends keyof T>(key: K, value: T[K]) => {
     setFilters((prev) => ({

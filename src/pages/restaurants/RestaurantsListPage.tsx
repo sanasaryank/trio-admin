@@ -126,10 +126,13 @@ export const RestaurantsListPage = () => {
   } = dictionaries || {};
 
   // Filters
-  const { filters, updateFilter, resetFilters, applyFilters } = useFilters<RestaurantFilters>({
-    search: '',
-    status: 'active',
-  });
+  const { filters, updateFilter, resetFilters, applyFilters } = useFilters<RestaurantFilters>(
+    {
+      search: '',
+      status: 'active',
+    },
+    'restaurants'
+  );
 
   // Temporary filters for drawer
   const {

@@ -58,9 +58,12 @@ const DictionariesPageInner = () => {
   const confirmDialog = useConfirmDialog();
 
   // Filters hook
-  const { filters, updateFilter, resetFilters } = useFilters<DictionaryFilters>({
-    status: 'active',
-  });
+  const { filters, updateFilter, resetFilters } = useFilters<DictionaryFilters>(
+    {
+      status: 'active',
+    },
+    `dict_${dictKey}`
+  );
 
   // Temporary filters for drawer
   const {
