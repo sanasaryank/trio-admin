@@ -247,6 +247,20 @@ export const theme: Theme = createTheme({
         },
       },
     },
+    MuiInputLabel: {
+      styleOverrides: {
+        outlined: {
+          '&.MuiInputLabel-shrink': {
+            backgroundColor: '#FFFFFF',
+            padding: '0 4px',
+            marginLeft: '-4px',
+            '&.Mui-focused': {
+               color: '#FF005C',
+            }
+          },
+        },
+      },
+    },
   },
 });
 
