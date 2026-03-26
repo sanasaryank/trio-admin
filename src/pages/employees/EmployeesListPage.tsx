@@ -62,11 +62,19 @@ export const EmployeesListPage = () => {
   }, [fetchError, showError]);
 
   // Filters management
+  const { filters, updateFilter, resetFilters, applyFilters } = useFilters<EmployeeFilters>(
+    {
+      search: '',
+      status: 'active',
+    },
+    'employees'
+  );
+
+  // Temporary filters for drawer
   const {
-    filters,
-    updateFilter,
-    resetFilters,
-    applyFilters,
+    filters: tempFilters,
+    updateFilter: updateTempFilter,
+    resetFilters: resetTempFilters,
   } = useFilters<EmployeeFilters>({
     search: '',
     status: 'active',
@@ -166,14 +174,29 @@ export const EmployeesListPage = () => {
 
   // Handle filter apply
   const handleApplyFilters = useCallback(() => {
+    Object.keys(tempFilters).forEach((key) => {
+      updateFilter(key as keyof EmployeeFilters, tempFilters[key as keyof EmployeeFilters]);
+    });
+    tableState.handlePageChange(0);
     filterDrawer.close();
-  }, [filterDrawer]);
+  }, [tempFilters, updateFilter, tableState, filterDrawer]);
 
   // Handle filter reset
   const handleResetFilters = useCallback(() => {
     resetFilters();
+    resetTempFilters();
+    tableState.handlePageChange(0);
     filterDrawer.close();
-  }, [resetFilters, filterDrawer]);
+  }, [resetFilters, resetTempFilters, tableState, filterDrawer]);
+
+  // Sync temp filters when drawer opens
+  useEffect(() => {
+    if (filterDrawer.isOpen) {
+      Object.keys(filters).forEach((key) => {
+        updateTempFilter(key as keyof EmployeeFilters, filters[key as keyof EmployeeFilters]);
+      });
+    }
+  }, [filterDrawer.isOpen, filters, updateTempFilter]);
 
   // Table columns configuration
   const columns = useMemo<Column<Employee>[]>(
@@ -294,8 +317,8 @@ export const EmployeesListPage = () => {
         <Select
           name="status"
           label={t('common.status')}
-          value={filters.status}
-          onChange={(value) => updateFilter('status', value as typeof filters.status)}
+          value={tempFilters.status}
+          onChange={(value) => updateTempFilter('status', value as typeof filters.status)}
           options={statusOptions}
           fullWidth
         />

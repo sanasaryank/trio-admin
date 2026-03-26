@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Drawer,
   Box,
@@ -36,6 +37,7 @@ export const AuditDrawer = ({
   entityLabel,
   onClose,
 }: AuditDrawerProps) => {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { showError } = useAppSnackbar();
@@ -67,16 +69,7 @@ export const AuditDrawer = ({
   }, [open, entityId, loadAuditEvents]);
 
   const getActionLabel = (action: string): string => {
-    const labels: Record<string, string> = {
-      create: 'Создание',
-      update: 'Обновление',
-      block: 'Блокировка',
-      unblock: 'Разблокировка',
-      login: 'Вход',
-      logout: 'Выход',
-      batch_create_qr: 'Массовое создание QR-кодов',
-    };
-    return labels[action] || action;
+    return t(`auditLog.actions.${action}`, { defaultValue: action });
   };
 
   const formatDetails = (event: AuditEvent): string => {
@@ -85,16 +78,20 @@ export const AuditDrawer = ({
     const parts: string[] = [];
     const metadata = event.metadata;
 
-    if (metadata.name) parts.push(`Название: ${metadata.name}`);
-    if (metadata.firstName) parts.push(`Имя: ${metadata.firstName}`);
-    if (metadata.lastName) parts.push(`Фамилия: ${metadata.lastName}`);
+    if (metadata.name) parts.push(`${t('auditLog.details.name')}: ${metadata.name}`);
+    if (metadata.firstName) parts.push(`${t('auditLog.details.firstName')}: ${metadata.firstName}`);
+    if (metadata.lastName) parts.push(`${t('auditLog.details.lastName')}: ${metadata.lastName}`);
     if (metadata.blocked !== undefined) {
-      parts.push(`Статус: ${metadata.blocked ? 'Заблокирован' : 'Активен'}`);
+      parts.push(
+        `${t('auditLog.details.status')}: ${
+          metadata.blocked ? t('auditLog.details.blocked') : t('auditLog.details.active')
+        }`
+      );
     }
-    if (metadata.cityId) parts.push(`ID города: ${metadata.cityId}`);
-    if (metadata.adminEmail) parts.push(`Email: ${metadata.adminEmail}`);
-    if (metadata.count) parts.push(`Количество: ${metadata.count}`);
-    if (metadata.qrText) parts.push(`QR текст: ${metadata.qrText}`);
+    if (metadata.cityId) parts.push(`${t('auditLog.details.cityId')}: ${metadata.cityId}`);
+    if (metadata.adminEmail) parts.push(`${t('auditLog.details.email')}: ${metadata.adminEmail}`);
+    if (metadata.count) parts.push(`${t('auditLog.details.count')}: ${metadata.count}`);
+    if (metadata.qrText) parts.push(`${t('auditLog.details.qrText')}: ${metadata.qrText}`);
 
     return parts.length > 0 ? parts.join(', ') : '-';
   };
@@ -114,7 +111,9 @@ export const AuditDrawer = ({
       }}
     >
       <Box sx={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="h6">Журнал действий: {entityLabel}</Typography>
+        <Typography variant="h6">
+          {t('auditLog.title')}: {entityLabel}
+        </Typography>
         <IconButton onClick={onClose} aria-label="close">
           <CloseIcon />
         </IconButton>
@@ -128,7 +127,7 @@ export const AuditDrawer = ({
         )}
 
         {!isLoading && events.length === 0 && (
-          <Alert severity="info">Нет записей в журнале</Alert>
+          <Alert severity="info">{t('auditLog.noEntries')}</Alert>
         )}
 
         {!isLoading && events.length > 0 && (
@@ -136,10 +135,10 @@ export const AuditDrawer = ({
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Время</TableCell>
-                  <TableCell>Пользователь</TableCell>
-                  <TableCell>Действие</TableCell>
-                  <TableCell>Детали</TableCell>
+                  <TableCell>{t('auditLog.columns.time')}</TableCell>
+                  <TableCell>{t('auditLog.columns.user')}</TableCell>
+                  <TableCell>{t('auditLog.columns.action')}</TableCell>
+                  <TableCell>{t('auditLog.columns.details')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

@@ -18,22 +18,15 @@
     "active": "Active",
     "blocked": "Blocked",
     "all": "All",
-    "loading": "Loading...",
+    "loading": "Loading",
     "loadingData": "Loading data...",
+    "coordinates": "Coordinates",
     "noData": "No data",
-    "error": "Error",
-    "success": {
-      "created": "Created successfully",
-      "updated": "Updated successfully",
-      "deleted": "Deleted successfully",
-      "blocked": "Blocked successfully",
-      "unblocked": "Unblocked successfully",
-      "saved": "Saved successfully"
-    },
     "error": {
       "loadFailed": "Failed to load data",
       "saveFailed": "Failed to save",
-      "deleteFailed": "Failed to delete"
+      "deleteFailed": "Failed to delete",
+      "title": "Error"
     },
     "savedSuccessfully": "Saved successfully",
     "createdSuccessfully": "Created successfully",
@@ -146,6 +139,10 @@
     "qrText": "QR Text",
     "tableNumber": "Table Number",
     "quantity": "Quantity",
+    "searchAddress": "Search for Address",
+    "enterAddress": "Enter address to find on map",
+    "addressNotFound": "Address not found",
+    "locationPickerHint": "Click on the map or drag the marker to select a location. For zoom, use the +/- buttons or scroll.",
     "blockQRTitle": "Block QR code?",
     "unblockQRTitle": "Unblock QR code?",
     "blockQRMessage": "Are you sure you want to block QR code {{qrText}}?",
@@ -209,12 +206,9 @@
     "portRequired": "Port is required",
     "usernameRequired": "Username is required",
     "quantityRequired": "Quantity is required",
-    "quantityMin": "Minimum quantity is 1",
-    "quantityMax": "Maximum quantity is 100",
-    "passwordRequired": "Password is required",
-    "quantityRequired": "Quantity is required",
     "quantityMin": "Minimum 1",
     "quantityMax": "Maximum 100",
+    "passwordRequired": "Password is required",
     "typeRequired": "Type is required",
     "legalAddressRequired": "Legal address is required",
     "tinRequired": "TIN is required"
@@ -262,11 +256,21 @@
     "refreshTtl": "Refresh TTL (seconds)",
     "refreshTtlHelper": "Cache time-to-live in seconds",
     "noAdjacentSameAdvertiser": "No Adjacent Same Advertiser",
-    "invalidKey": "Invalid dictionary key",
-    "blockConfirmTitle": "Block entry?",
-    "unblockConfirmTitle": "Unblock entry?",
-    "blockConfirmMessage": "Are you sure you want to block entry \"{{name}}\"?",
-    "unblockConfirmMessage": "Are you sure you want to unblock entry \"{{name}}\"?"
+    "blockConfirmTitle": "Block entry",
+    "unblockConfirmTitle": "Unblock entry",
+    "blockConfirmMessage": "Are you sure you want to block the {{entity}} \"{{name}}\"?",
+    "unblockConfirmMessage": "Are you sure you want to unblock the {{entity}} \"{{name}}\"?",
+    "singular": {
+      "countries": "country",
+      "cities": "city",
+      "districts": "district",
+      "restaurantTypes": "restaurant type",
+      "priceSegments": "price segment",
+      "menuTypes": "menu type",
+      "integrationTypes": "integration type",
+      "placements": "ads slot",
+      "default": "menu type"
+    }
   },
   "advertisers": {
     "title": "Advertisers",
@@ -426,44 +430,7 @@
     "editTitle": "Edit Campaign",
     "search": "Search campaigns...",
     "searchPlaceholder": "Search campaigns...",
-    "noCampaignsFound": "No campaigns found",
-    "fields": {
-      "advertiser": "Advertiser",
-      "name": "Name",
-      "startDate": "Start Date",
-      "endDate": "End Date",
-      "budget": "Budget ($)",
-      "budgetDaily": "Daily Budget ($)",
-      "price": "Price",
-      "priceHelper": "Price per unit (CPM/CPC/CPV/CPA)",
-      "pricingModel": "Pricing Model",
-      "spendStrategy": "Spend Strategy",
-      "priority": "Priority",
-      "weight": "Weight",
-      "overdeliveryRatio": "Overdelivery Ratio (%)",
-      "overdeliveryRatioHelper": "Percentage value (0-100)",
-      "frequencyCap": "Frequency Cap",
-      "frequencyCapStrategy": "Frequency Cap Strategy",
-      "frequencyCapPerUser": "Per User",
-      "frequencyCapPerSession": "Per Session",
-      "impressionsCount": "Impressions Count",
-      "clicksCount": "Clicks Count",
-      "windowSec": "Window (seconds)",
-      "windowSecHelper": "Time window in seconds",
-      "targeting": "Targeting",
-      "locationsMode": "Locations Mode",
-      "locations": "Locations",
-      "locationsHelper": "Leave empty to target all locations",
-      "restaurantTypesMode": "Restaurant Types Mode",
-      "restaurantTypes": "Restaurant Types",
-      "restaurantTypesHelper": "Leave empty to target all types",
-      "menuTypesMode": "Menu Types Mode",
-      "menuTypes": "Menu Types",
-      "menuTypesHelper": "Leave empty to target all menu types",
-      "placements": "Ads Slots",
-      "placementsHelper": "Leave empty to target all ads slots",
-      "blocked": "Blocked"
-    }
+    "noCampaignsFound": "No campaigns found"
   },
   "creatives": {
     "title": "Creatives",
@@ -566,6 +533,37 @@
     "validation": {
       "nameRequired": "Name is required",
       "colorInvalid": "Color must be a valid hex color (e.g., #FF0000)"
+    }
+  },
+  "auditLog": {
+    "title": "Action Log",
+    "noEntries": "No entries in the log",
+    "columns": {
+      "time": "Time",
+      "user": "User",
+      "action": "Action",
+      "details": "Details"
+    },
+    "actions": {
+      "create": "Creation",
+      "update": "Update",
+      "block": "Block",
+      "unblock": "Unblock",
+      "login": "Login",
+      "logout": "Logout",
+      "batch_create_qr": "Batch QR Creation"
+    },
+    "details": {
+      "name": "Name",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "status": "Status",
+      "blocked": "Blocked",
+      "active": "Active",
+      "cityId": "City ID",
+      "email": "Email",
+      "count": "Count",
+      "qrText": "QR Text"
     }
   }
 }
