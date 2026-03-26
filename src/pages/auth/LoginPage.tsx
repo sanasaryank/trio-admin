@@ -19,7 +19,7 @@ import { getErrorMessage } from '../../api/errors';
 import TextField from '../../components/ui/atoms/TextField';
 
 const languages = [
-  { code: 'hy', name: 'Հայերեն', flag: '\u{1F1FA}\u{1F1F8}' },
+  { code: 'hy', name: 'Հայերեն', flag: '\u{1F1E6}\u{1F1F2}' },
   { code: 'ru', name: 'Русский', flag: '\u{1F1F7}\u{1F1FA}' },
   { code: 'en', name: 'English', flag: '\u{1F1FA}\u{1F1F8}' },
 ];
