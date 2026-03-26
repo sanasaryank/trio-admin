@@ -563,5 +563,36 @@
       "nameRequired": "Название обязательно",
       "colorInvalid": "Цвет должен быть в формате hex (например, #FF0000)"
     }
+  },
+  "auditLog": {
+    "title": "Журнал действий",
+    "noEntries": "Нет записей в журнале",
+    "columns": {
+      "time": "Время",
+      "user": "Пользователь",
+      "action": "Действие",
+      "details": "Детали"
+    },
+    "actions": {
+      "create": "Создание",
+      "update": "Обновление",
+      "block": "Блокировка",
+      "unblock": "Разблокировка",
+      "login": "Вход",
+      "logout": "Выход",
+      "batch_create_qr": "Массовое создание QR-кодов"
+    },
+    "details": {
+      "name": "Название",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "status": "Статус",
+      "blocked": "Заблокирован",
+      "active": "Активен",
+      "cityId": "ID города",
+      "email": "Email",
+      "count": "Количество",
+      "qrText": "QR текст"
+    }
   }
 }
