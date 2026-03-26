@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../utils/logger';
@@ -77,9 +77,31 @@ export const MainLayout = () => {
   const { t } = useTranslation();
   const { user, logout } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('sidebar_expanded_items');
+    return saved ? JSON.parse(saved) : {};
+  });
 
-  const menuItems = getMenuItems();
+  const menuItems = useMemo(() => getMenuItems(), []);
+
+  // Save expanded state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebar_expanded_items', JSON.stringify(expandedItems));
+  }, [expandedItems]);
+
+  // Automatically expand parent if we are on a child page
+  useEffect(() => {
+    const activeParent = menuItems.find((item: MenuItem) => 
+      item.children?.some((child: MenuItem) => location.pathname.startsWith(child.path || ''))
+    );
+    
+    if (activeParent && !expandedItems[activeParent.id]) {
+      setExpandedItems(prev => ({
+        ...prev,
+        [activeParent.id]: true
+      }));
+    }
+  }, [location.pathname, menuItems]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -176,7 +198,7 @@ export const MainLayout = () => {
       </Toolbar>
       <Divider />
       <List sx={{ px: 2 }}>
-        {menuItems.map((item) => renderMenuItem(item))}
+        {menuItems.map((item: MenuItem) => renderMenuItem(item))}
       </List>
     </Box>
   );
