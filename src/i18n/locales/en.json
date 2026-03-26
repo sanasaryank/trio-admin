@@ -155,7 +155,7 @@
     "assigned": "Assigned",
     "assignedFilter": "Assigned",
     "unassignedFilter": "Unassigned",
-    "searchPlaceholder": "Search by ID or name...",
+    "searchPlaceholder": "Search by ID or name",
     "blockConfirmTitle": "Block restaurant?",
     "unblockConfirmTitle": "Unblock restaurant?",
     "blockConfirmMessage": "Are you sure you want to block restaurant {{name}}?",
