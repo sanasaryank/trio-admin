@@ -197,7 +197,7 @@ export const EmployeeFormPage = forwardRef<EmployeeFormHandle, EmployeeFormPageP
 
   const formContent = (
     <>
-      <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate sx={{ mt: isDialog ? 3 : 0 }}>
+      <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate autoComplete="off" sx={{ mt: isDialog ? 3 : 0 }}>
         <Box sx={{ mb: 2 }}>
           <FormField
             name="firstName"
@@ -252,6 +252,7 @@ export const EmployeeFormPage = forwardRef<EmployeeFormHandle, EmployeeFormPageP
               type="password"
               required={!isEditMode || watch('changePassword')}
               disabled={isSubmitting}
+              autoComplete="new-password"
             />
           </Box>
         )}
