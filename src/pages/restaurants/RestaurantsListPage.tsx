@@ -454,8 +454,7 @@ export const RestaurantsListPage = () => {
               <span style={{ display: 'inline-flex' }}>
                 <Switch
                   checked={!restaurant.isBlocked}
-                  disabled={true}
-                  onChange={() => {}}
+                  onChange={() => handleBlockToggle(restaurant)}
                 />
               </span>
             </Tooltip>
