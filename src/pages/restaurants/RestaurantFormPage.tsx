@@ -114,7 +114,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
   const prevCityIdRef = useRef<string>('');
   const restaurantHashRef = useRef<string | undefined>(undefined);
 
-  const { showError } = useAppSnackbar();
+  const { showError, showSuccess } = useAppSnackbar();
   const { isSubmitting, handleSubmit: handleFormSubmit } = useFormSubmit<RestaurantFormValues>({ onError: showError });
 
   // Create schema with translations
@@ -327,6 +327,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
             integrationTypeId: formData.integrationTypeId,
             adminEmail: formData.adminEmail,
             adminUsername: formData.adminUsername,
+            adminChangePassword: formData.adminChangePassword,
             ...(isEditMode && !formData.adminChangePassword
               ? {}
               : { adminPassword: formData.adminPassword || '' }),
@@ -334,12 +335,15 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
               host: formData.connectionData.host,
               port: Number(formData.connectionData.port),
               username: formData.connectionData.username,
+              changePassword: formData.connectionData.changePassword,
               ...(isEditMode && !formData.connectionData.changePassword
                 ? {}
                 : { password: formData.connectionData.password || '' }),
             },
             isBlocked: formData.isBlocked,
           };
+
+          console.log(`Restaurant ${isEditMode ? 'update' : 'create'} data:`, submitData);
 
           // Include hash for optimistic locking in edit mode
           if (isEditMode && restaurantHashRef.current) {
@@ -353,6 +357,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
           }
         },
         () => {
+          showSuccess(t(isEditMode ? 'common.updatedSuccessfully' : 'common.createdSuccessfully'));
           if (onClose) {
             onClose();
           } else {

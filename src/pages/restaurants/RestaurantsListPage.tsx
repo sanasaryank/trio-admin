@@ -436,6 +436,8 @@ export const RestaurantsListPage = () => {
         id: 'actions',
         label: t('common.actions'),
         sortable: false,
+        width: '1%',
+        align: 'left',
         render: (restaurant) => (
           <Box
             sx={{
@@ -443,7 +445,7 @@ export const RestaurantsListPage = () => {
               justifyContent: 'flex-end',
               alignItems: 'center',
               gap: 0.5,
-              flexWrap: 'wrap',
+              flexWrap: 'nowrap',
             }}
           >
             <Tooltip
