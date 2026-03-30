@@ -117,6 +117,7 @@ export const EmployeesListPage = () => {
     initialRowsPerPage: 10,
     defaultSortColumn: 'id',
     defaultSortDirection: 'asc',
+    persistenceKey: 'employees',
   });
 
   // Confirm dialog for block/unblock
@@ -257,15 +258,17 @@ export const EmployeesListPage = () => {
       <Box
         sx={{
           display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: { xs: 'flex-start', sm: 'center' },
           mb: 3,
-          flexWrap: 'wrap',
           gap: 2,
         }}
       >
-        <Typography variant="h4">{t('employees.title')}</Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Typography variant="h4" sx={{ wordBreak: 'break-word' }}>
+          {t('employees.title')}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             startIcon={<FilterListIcon />}

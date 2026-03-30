@@ -193,7 +193,7 @@ export const MainLayout = () => {
           sx={{ height: 32, width: 'auto' }}
         />
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          TRIO Admin
+          Super Admin
         </Typography>
       </Toolbar>
       <Divider />

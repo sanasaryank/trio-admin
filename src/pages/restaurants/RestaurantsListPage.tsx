@@ -244,6 +244,7 @@ export const RestaurantsListPage = () => {
     initialRowsPerPage: 10,
     defaultSortColumn: 'id' as keyof RestaurantListItem,
     defaultSortDirection: 'asc',
+    persistenceKey: 'restaurants',
   });
 
   // Custom sorting that handles city and district names
@@ -436,6 +437,8 @@ export const RestaurantsListPage = () => {
         id: 'actions',
         label: t('common.actions'),
         sortable: false,
+        width: '1%',
+        align: 'left',
         render: (restaurant) => (
           <Box
             sx={{
@@ -443,7 +446,7 @@ export const RestaurantsListPage = () => {
               justifyContent: 'flex-end',
               alignItems: 'center',
               gap: 0.5,
-              flexWrap: 'wrap',
+              flexWrap: 'nowrap',
             }}
           >
             <Tooltip
@@ -505,9 +508,20 @@ export const RestaurantsListPage = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Typography variant="h4">{t('restaurants.title')}</Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', sm: 'center' }, 
+          mb: 3, 
+          gap: 2 
+        }}
+      >
+        <Typography variant="h4" sx={{ wordBreak: 'break-word' }}>
+          {t('restaurants.title')}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             startIcon={<FilterListIcon />}

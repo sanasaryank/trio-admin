@@ -59,6 +59,8 @@ export interface Column<T extends Record<string, any> = Record<string, any>> {
   render?: (row: T) => ReactNode;
   /** Ширина колонки */
   width?: string | number;
+  /** Выравнивание содержимого */
+  align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
 }
 
 /**
@@ -238,6 +240,7 @@ function DataTable<T extends Record<string, any>>({
           <TableCell
             key={String(column.id)}
             style={{ width: column.width }}
+            align={column.align}
           >
             <CellErrorBoundary>
               {renderCellContent(column, row)}
@@ -256,6 +259,7 @@ function DataTable<T extends Record<string, any>>({
               <TableCell
                 key={String(column.id)}
                 style={{ width: column.width }}
+                align={column.align}
               >
                 {column.sortable && onSort ? (
                   <TableSortLabel
