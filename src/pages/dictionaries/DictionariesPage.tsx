@@ -147,6 +147,7 @@ const DictionariesPageInner = () => {
     initialRowsPerPage: 10,
     defaultSortColumn: 'id',
     defaultSortDirection: 'asc',
+    persistenceKey: `dict_${dictKey}`,
   });
 
   // Memoized helper functions for related data
@@ -263,7 +264,7 @@ const DictionariesPageInner = () => {
       {
         id: 'id',
         label: 'ID',
-        sortable: true,
+        sortable: false,
         width: 100,
       },
       {

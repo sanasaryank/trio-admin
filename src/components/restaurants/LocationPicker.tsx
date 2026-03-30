@@ -97,7 +97,7 @@ interface GeocodingResult {
 const forwardGeocode = async (query: string): Promise<GeocodingResult[]> => {
   try {
     await respectRateLimit();
-    
+
     // Add country code hint for better results if needed, but keeping it general for now
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10`,
@@ -201,11 +201,11 @@ export const LocationPicker = React.memo<LocationPickerProps>(
     const { t } = useTranslation();
     const markerRef = useRef<L.Marker>(null);
     const searchContainerRef = useRef<HTMLDivElement>(null);
-    
+
     // Use default center (Yerevan) if coordinates are 0,0 or invalid
     const isValidCoordinates = lat !== 0 && lng !== 0 && lat !== null && lng !== null;
     const initialPosition: [number, number] = isValidCoordinates ? [lat, lng] : DEFAULT_CENTER;
-    
+
     const [position, setPosition] = useState<[number, number]>(initialPosition);
     const [isGeocoding, setIsGeocoding] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -282,7 +282,7 @@ export const LocationPicker = React.memo<LocationPickerProps>(
             );
             matchedDistrictId = matchedDistrict?.id;
           }
-          
+
           if (!matchedDistrictId && !matchedCityId) {
             const matchedDistrict = districts.find((d) => namesMatch(d.name, districtName));
             if (matchedDistrict) {
@@ -429,77 +429,77 @@ export const LocationPicker = React.memo<LocationPickerProps>(
         {/* Address Search */}
         <Box ref={searchContainerRef} sx={{ mb: 2, position: 'relative' }}>
           <TextField
-              fullWidth
-              variant="outlined"
-              size="small"
-              placeholder={t('restaurants.enterAddress')}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (showResults) setShowResults(false);
+            fullWidth
+            variant="outlined"
+            size="small"
+            placeholder={t('restaurants.enterAddress')}
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (showResults) setShowResults(false);
+            }}
+            onKeyPress={handleKeyPress}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  {isSearching ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <>
+                      {searchQuery && (
+                        <IconButton size="small" onClick={() => {
+                          setSearchQuery('');
+                          setSearchResults([]);
+                          setShowResults(false);
+                        }}>
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </>
+                  )}
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          {showResults && searchResults.length > 0 && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                zIndex: 1100,
+                mt: 0.5,
+                bgcolor: 'background.paper',
+                boxShadow: 3,
+                borderRadius: 1,
+                maxHeight: 300,
+                overflowY: 'auto',
               }}
-              onKeyPress={handleKeyPress}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    {isSearching ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      <>
-                        {searchQuery && (
-                          <IconButton size="small" onClick={() => {
-                            setSearchQuery('');
-                            setSearchResults([]);
-                            setShowResults(false);
-                          }}>
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </>
-                    )}
-                  </InputAdornment>
-                ),
-              }}
-            />
-            
-            {showResults && searchResults.length > 0 && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  zIndex: 1100,
-                  mt: 0.5,
-                  bgcolor: 'background.paper',
-                  boxShadow: 3,
-                  borderRadius: 1,
-                  maxHeight: 300,
-                  overflowY: 'auto',
-                }}
-              >
-                {searchResults.map((result, index) => (
-                  <Box
-                    key={index}
-                    onClick={() => handleSelectResult(result)}
-                    sx={{
-                      p: 1.5,
-                      cursor: 'pointer',
-                      '&:hover': { bgcolor: 'action.hover' },
-                      borderBottom: index < searchResults.length - 1 ? '1px solid' : 'none',
-                      borderColor: 'divider',
-                    }}
-                  >
-                    <Typography variant="body2">{result.display_name}</Typography>
-                  </Box>
-                ))}
-              </Box>
-            )}
+            >
+              {searchResults.map((result, index) => (
+                <Box
+                  key={index}
+                  onClick={() => handleSelectResult(result)}
+                  sx={{
+                    p: 1.5,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'action.hover' },
+                    borderBottom: index < searchResults.length - 1 ? '1px solid' : 'none',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography variant="body2">{result.display_name}</Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
         </Box>
 
         <MapContainer
@@ -523,7 +523,7 @@ export const LocationPicker = React.memo<LocationPickerProps>(
           <MapClickHandler onChange={handleMapClick} />
           <MapCenterUpdater position={position} />
         </MapContainer>
-        
+
         <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <Typography variant="body2" color="text.secondary">
             {t('common.coordinates')}: {coordinatesText}

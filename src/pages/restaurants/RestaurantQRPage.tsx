@@ -185,6 +185,7 @@ export const RestaurantQRPage = () => {
     initialRowsPerPage: 10,
     defaultSortColumn: 'id' as keyof QRCode,
     defaultSortDirection: 'asc',
+    persistenceKey: 'restaurant_qr',
   });
 
   // Custom sorting for QR codes
@@ -345,7 +346,7 @@ export const RestaurantQRPage = () => {
       {
         id: 'id',
         label: 'ID',
-        sortable: true,
+        sortable: false,
         render: (qr) => {
           try {
             const id = qr?.id;

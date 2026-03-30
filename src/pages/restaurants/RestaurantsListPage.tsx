@@ -244,6 +244,7 @@ export const RestaurantsListPage = () => {
     initialRowsPerPage: 10,
     defaultSortColumn: 'id' as keyof RestaurantListItem,
     defaultSortDirection: 'asc',
+    persistenceKey: 'restaurants',
   });
 
   // Custom sorting that handles city and district names
