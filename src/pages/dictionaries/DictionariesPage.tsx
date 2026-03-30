@@ -264,7 +264,7 @@ const DictionariesPageInner = () => {
       {
         id: 'id',
         label: 'ID',
-        sortable: true,
+        sortable: false,
         width: 100,
       },
       {

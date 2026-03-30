@@ -346,7 +346,7 @@ export const RestaurantQRPage = () => {
       {
         id: 'id',
         label: 'ID',
-        sortable: true,
+        sortable: false,
         render: (qr) => {
           try {
             const id = qr?.id;

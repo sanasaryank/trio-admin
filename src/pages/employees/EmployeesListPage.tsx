@@ -205,7 +205,7 @@ export const EmployeesListPage = () => {
       {
         id: 'id',
         label: t('employees.id'),
-        sortable: true,
+        sortable: false,
         width: 100,
       },
       {

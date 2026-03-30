@@ -207,7 +207,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
     if (restaurant) {
       // Store hash for optimistic locking
       restaurantHashRef.current = restaurant.hash;
-      
+
       // Store initial values BEFORE resetting form to prevent cascade
       prevCountryIdRef.current = String(restaurant.countryId);
       prevCityIdRef.current = String(restaurant.cityId);
@@ -395,13 +395,13 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
           // Update refs to prevent cascade reset
           prevCountryIdRef.current = matchedCity.countryId;
           prevCityIdRef.current = metadata.cityId;
-          
+
           // Set country first
           setValue('countryId', matchedCity.countryId);
           // Then set city
           setValue('cityId', metadata.cityId);
         }
-        
+
         // Only update district if it belongs to the matched city
         if (metadata.districtId) {
           const districtBelongsToCity = districts.some(
@@ -521,101 +521,30 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
   const formContent = (
     <>
       <Box component="form" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate autoComplete="off">
-          <Typography variant="h6" gutterBottom>
-            {t('restaurants.basicInfo')}
-          </Typography>
+        <Typography variant="h6" gutterBottom>
+          {t('restaurants.basicInfo')}
+        </Typography>
 
-          <Grid container spacing={2}>
-            <Grid size={12}>
-              {/* Multilingual Name Inputs */}
-              <Box>
-                <Typography variant="caption" sx={{ mb: 1, display: 'block', color: 'text.secondary' }}>
-                  {t('restaurants.name')} *
-                </Typography>
-                
-                {/* Armenian */}
-                <Box sx={{ mb: 1.5 }}>
-                  <Controller
-                    name="name.ARM"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label=""
-                        type="text"
-                        error={!!(errors as any)?.name?.ARM}
-                        helperText={(errors as any)?.name?.ARM?.message}
-                        required
-                        disabled={isSubmitting}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <Box
-                                component="span"
-                                sx={{
-                                  fontSize: '1.5rem',
-                                  lineHeight: 1,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                }}
-                              >
-                                🇦🇲
-                              </Box>
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-                </Box>
-                
-                {/* English */}
-                <Box sx={{ mb: 1.5 }}>
-                  <Controller
-                    name="name.ENG"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label=""
-                        type="text"
-                        error={!!(errors as any)?.name?.ENG}
-                        helperText={(errors as any)?.name?.ENG?.message}
-                        required
-                        disabled={isSubmitting}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <Box
-                                component="span"
-                                sx={{
-                                  fontSize: '1.5rem',
-                                  lineHeight: 1,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                }}
-                              >
-                                🇺🇸
-                              </Box>
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-                </Box>
-                
-                {/* Russian */}
+        <Grid container spacing={2}>
+          <Grid size={12}>
+            {/* Multilingual Name Inputs */}
+            <Box>
+              <Typography variant="caption" sx={{ mb: 1, display: 'block', color: 'text.secondary' }}>
+                {t('restaurants.name')} *
+              </Typography>
+
+              {/* Armenian */}
+              <Box sx={{ mb: 1.5 }}>
                 <Controller
-                  name="name.RUS"
+                  name="name.ARM"
                   control={control}
                   render={({ field }) => (
                     <TextField
                       {...field}
                       label=""
                       type="text"
-                      error={!!(errors as any)?.name?.RUS}
-                      helperText={(errors as any)?.name?.RUS?.message}
+                      error={!!(errors as any)?.name?.ARM}
+                      helperText={(errors as any)?.name?.ARM?.message}
                       required
                       disabled={isSubmitting}
                       InputProps={{
@@ -630,7 +559,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
                                 alignItems: 'center',
                               }}
                             >
-                              🇷🇺
+                              🇦🇲
                             </Box>
                           </InputAdornment>
                         ),
@@ -639,223 +568,294 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
                   )}
                 />
               </Box>
-            </Grid>
 
-            <Grid size={12}>
-              <FormField
-                name="crmUrl"
-                control={control}
-                label={t('restaurants.crmUrl')}
-                type="text"
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <FormField
-                name="countryId"
-                control={control}
-                label={t('restaurants.country')}
-                type="select"
-                options={countryOptions}
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <FormField
-                name="cityId"
-                control={control}
-                label={t('restaurants.city')}
-                type="select"
-                options={cityOptions}
-                required
-                disabled={isSubmitting || !selectedCountryId}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-              <FormField
-                name="districtId"
-                control={control}
-                label={t('restaurants.district')}
-                type="select"
-                options={districtOptions}
-                required
-                disabled={isSubmitting || !selectedCityId}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <Typography variant="subtitle2" gutterBottom>
-                {t('restaurants.location')} *
-              </Typography>
-              <LocationPicker
-                lat={currentLat}
-                lng={currentLng}
-                onChange={handleLocationChange}
-                onLocationMetadataChange={handleLocationMetadataChange}
-                cities={cities}
-                districts={districts}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormField
-                name="typeId"
-                control={control}
-                label={t('restaurants.type')}
-                type="multiselect"
-                options={restaurantTypeOptions}
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormField
-                name="priceSegmentId"
-                control={control}
-                label={t('restaurants.priceSegment')}
-                type="multiselect"
-                options={priceSegmentOptions}
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormField
-                name="menuTypeId"
-                control={control}
-                label={t('restaurants.menuType')}
-                type="multiselect"
-                options={menuTypeOptions}
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <FormField
-                name="integrationTypeId"
-                control={control}
-                label={t('restaurants.integrationType')}
-                type="select"
-                options={integrationTypeOptions}
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <FormField
-                name="adminEmail"
-                control={control}
-                label={t('restaurants.adminEmail')}
-                type="email"
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <FormField
-                name="adminUsername"
-                control={control}
-                label={t('restaurants.adminUsername')}
-                type="text"
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            {isEditMode && (
-              <Grid size={12}>
-                <Checkbox
-                  checked={adminChangePassword}
-                  onChange={handleAdminChangePasswordToggle}
-                  label={t('restaurants.changeAdminPassword')}
-                  disabled={isSubmitting}
+              {/* English */}
+              <Box sx={{ mb: 1.5 }}>
+                <Controller
+                  name="name.ENG"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label=""
+                      type="text"
+                      error={!!(errors as any)?.name?.ENG}
+                      helperText={(errors as any)?.name?.ENG?.message}
+                      required
+                      disabled={isSubmitting}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Box
+                              component="span"
+                              sx={{
+                                fontSize: '1.5rem',
+                                lineHeight: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                              }}
+                            >
+                              🇺🇸
+                            </Box>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
                 />
-              </Grid>
-            )}
+              </Box>
 
-            <Grid size={12}>
-              <FormField
-                name="adminPassword"
+              {/* Russian */}
+              <Controller
+                name="name.RUS"
                 control={control}
-                label={t('restaurants.adminPassword')}
-                type="password"
-                required={!isEditMode || adminChangePassword}
-                disabled={isSubmitting || (isEditMode && !adminChangePassword)}
-                autoComplete="new-password"
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label=""
+                    type="text"
+                    error={!!(errors as any)?.name?.RUS}
+                    helperText={(errors as any)?.name?.RUS?.message}
+                    required
+                    disabled={isSubmitting}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Box
+                            component="span"
+                            sx={{
+                              fontSize: '1.5rem',
+                              lineHeight: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                          >
+                            🇷🇺
+                          </Box>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                )}
               />
-            </Grid>
-
-            <Grid size={12}>
-              <FormField
-                name="legalAddress"
-                control={control}
-                label={t('restaurants.legalAddress')}
-                type="text"
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
-
-            <Grid size={12}>
-              <FormField
-                name="tin"
-                control={control}
-                label={t('restaurants.tin')}
-                type="text"
-                required
-                disabled={isSubmitting}
-              />
-            </Grid>
+            </Box>
           </Grid>
 
-          <ConnectionDataFields
-            control={control}
-            isEditMode={isEditMode}
-            changePassword={changePassword}
-            onChangePasswordToggle={handleChangePasswordToggle}
-            disabled={isSubmitting}
-          />
+          <Grid size={12}>
+            <FormField
+              name="crmUrl"
+              control={control}
+              label={t('restaurants.crmUrl')}
+              type="text"
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
 
-          <Divider sx={{ my: 3 }} />
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <FormField
+              name="countryId"
+              control={control}
+              label={t('restaurants.country')}
+              type="select"
+              options={countryOptions}
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
 
-          <FormField
-            name="isBlocked"
-            control={control}
-            label={t('common.blocked')}
-            type="switch"
-            disabled={isSubmitting}
-          />
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <FormField
+              name="cityId"
+              control={control}
+              label={t('restaurants.city')}
+              type="select"
+              options={cityOptions}
+              required
+              disabled={isSubmitting || !selectedCountryId}
+            />
+          </Grid>
 
-          {!isDialog && (
-            <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                loading={isSubmitting}
-              >
-                {t('common.save')}
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={handleCancel}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <FormField
+              name="districtId"
+              control={control}
+              label={t('restaurants.district')}
+              type="select"
+              options={districtOptions}
+              required
+              disabled={isSubmitting || !selectedCityId}
+            />
+          </Grid>
+
+          <Grid size={12}>
+            <Typography variant="subtitle2" gutterBottom>
+              {t('restaurants.location')} *
+            </Typography>
+            <LocationPicker
+              lat={currentLat}
+              lng={currentLng}
+              onChange={handleLocationChange}
+              onLocationMetadataChange={handleLocationMetadataChange}
+              cities={cities}
+              districts={districts}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormField
+              name="typeId"
+              control={control}
+              label={t('restaurants.type')}
+              type="multiselect"
+              options={restaurantTypeOptions}
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormField
+              name="priceSegmentId"
+              control={control}
+              label={t('restaurants.priceSegment')}
+              type="multiselect"
+              options={priceSegmentOptions}
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormField
+              name="menuTypeId"
+              control={control}
+              label={t('restaurants.menuType')}
+              type="multiselect"
+              options={menuTypeOptions}
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormField
+              name="integrationTypeId"
+              control={control}
+              label={t('restaurants.integrationType')}
+              type="select"
+              options={integrationTypeOptions}
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
+
+          <Grid size={12}>
+            <FormField
+              name="adminEmail"
+              control={control}
+              label={t('restaurants.adminEmail')}
+              type="email"
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
+
+          <Grid size={12}>
+            <FormField
+              name="adminUsername"
+              control={control}
+              label={t('restaurants.adminUsername')}
+              type="text"
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
+
+          {isEditMode && (
+            <Grid size={12}>
+              <Checkbox
+                checked={adminChangePassword}
+                onChange={handleAdminChangePasswordToggle}
+                label={t('restaurants.changeAdminPassword')}
                 disabled={isSubmitting}
-              >
-                {t('common.cancel')}
-              </Button>
-            </Box>
+              />
+            </Grid>
           )}
-        </Box>
+
+          <Grid size={12}>
+            <FormField
+              name="adminPassword"
+              control={control}
+              label={t('restaurants.adminPassword')}
+              type="password"
+              required={!isEditMode || adminChangePassword}
+              disabled={isSubmitting || (isEditMode && !adminChangePassword)}
+              autoComplete="new-password"
+            />
+          </Grid>
+
+          <Grid size={12}>
+            <FormField
+              name="legalAddress"
+              control={control}
+              label={t('restaurants.legalAddress')}
+              type="text"
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
+
+          <Grid size={12}>
+            <FormField
+              name="tin"
+              control={control}
+              label={t('restaurants.tin')}
+              type="text"
+              required
+              disabled={isSubmitting}
+            />
+          </Grid>
+        </Grid>
+
+        <ConnectionDataFields
+          control={control}
+          isEditMode={isEditMode}
+          changePassword={changePassword}
+          onChangePasswordToggle={handleChangePasswordToggle}
+          disabled={isSubmitting}
+        />
+
+        <Divider sx={{ my: 3 }} />
+
+        <FormField
+          name="isBlocked"
+          control={control}
+          label={t('common.blocked')}
+          type="switch"
+          disabled={isSubmitting}
+        />
+
+        {!isDialog && (
+          <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              loading={isSubmitting}
+            >
+              {t('common.save')}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleCancel}
+              disabled={isSubmitting}
+            >
+              {t('common.cancel')}
+            </Button>
+          </Box>
+        )}
+      </Box>
     </>
   );
 
