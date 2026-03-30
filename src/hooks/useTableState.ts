@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 
 /**
  * Props for useTableState hook
@@ -14,6 +14,8 @@ export interface UseTableStateProps<T> {
   defaultSortColumn?: keyof T;
   /** Default sort direction (default: 'asc') */
   defaultSortDirection?: 'asc' | 'desc';
+  /** Optional key for localStorage persistence */
+  persistenceKey?: string;
 }
 
 /**
@@ -90,15 +92,41 @@ function useTableState<T>({
   initialPage = 0,
   defaultSortColumn,
   defaultSortDirection = 'asc',
+  persistenceKey,
 }: UseTableStateProps<T>): UseTableStateReturn<T> {
   const [page, setPage] = useState<number>(initialPage);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(initialRowsPerPage);
-  const [sortColumn, setSortColumn] = useState<keyof T | null>(
-    defaultSortColumn ?? null
-  );
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
-    defaultSortDirection
-  );
+
+  const [rowsPerPage, setRowsPerPage] = useState<number>(() => {
+    if (persistenceKey) {
+      const saved = localStorage.getItem(`table_${persistenceKey}_rows`);
+      if (saved && !isNaN(Number(saved))) return Number(saved);
+    }
+    return initialRowsPerPage;
+  });
+
+  const [sortColumn, setSortColumn] = useState<keyof T | null>(() => {
+    if (persistenceKey) {
+      const saved = localStorage.getItem(`table_${persistenceKey}_sortCol`);
+      if (saved !== null) return saved === 'null' ? null : (saved as keyof T);
+    }
+    return defaultSortColumn ?? null;
+  });
+
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => {
+    if (persistenceKey) {
+      const saved = localStorage.getItem(`table_${persistenceKey}_sortDir`);
+      if (saved === 'asc' || saved === 'desc') return saved;
+    }
+    return defaultSortDirection;
+  });
+
+  useEffect(() => {
+    if (persistenceKey) {
+      localStorage.setItem(`table_${persistenceKey}_rows`, String(rowsPerPage));
+      localStorage.setItem(`table_${persistenceKey}_sortCol`, String(sortColumn));
+      localStorage.setItem(`table_${persistenceKey}_sortDir`, sortDirection);
+    }
+  }, [persistenceKey, rowsPerPage, sortColumn, sortDirection]);
 
   // Sort data
   const sortedData = useMemo(() => {

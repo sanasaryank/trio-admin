@@ -117,6 +117,7 @@ export const EmployeesListPage = () => {
     initialRowsPerPage: 10,
     defaultSortColumn: 'id',
     defaultSortDirection: 'asc',
+    persistenceKey: 'employees',
   });
 
   // Confirm dialog for block/unblock
