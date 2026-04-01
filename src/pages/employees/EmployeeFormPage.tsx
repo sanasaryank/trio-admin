@@ -21,15 +21,27 @@ const createEmployeeSchema = (t: (key: string) => string) => z.object({
   password: z.string().optional(),
   changePassword: z.boolean().optional(),
   isBlocked: z.boolean(),
-}).refine((data) => {
-  // Password is required when creating a new employee
-  if (!data.changePassword) {
-    return true; // Skip validation if changePassword is false (edit mode)
+}).superRefine((data, ctx) => {
+  // Password is required when creating a new employee or when changePassword is true
+  if (data.changePassword) {
+    if (!data.password || data.password.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('validation.passwordMinLength'),
+        path: ['password'],
+      });
+    } else {
+      const hasLetter = /[a-zA-Z]/.test(data.password);
+      const hasNumber = /[0-9]/.test(data.password);
+      if (!hasLetter || !hasNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('validation.passwordComplexity'),
+          path: ['password'],
+        });
+      }
+    }
   }
-  return data.password && data.password.length >= 6;
-}, {
-  message: t('validation.passwordMinLength'),
-  path: ['password'],
 });
 
 type EmployeeFormValues = z.infer<ReturnType<typeof createEmployeeSchema>>;

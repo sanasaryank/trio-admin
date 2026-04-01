@@ -196,6 +196,7 @@
     "lastNameRequired": "Last name is required",
     "usernameMinLength": "Username must be at least 3 characters",
     "passwordMinLength": "Password must be at least 6 characters",
+    "passwordComplexity": "Password must contain at least one letter and one number",
     "selectCountry": "Select a country",
     "selectCity": "Select a city",
     "selectDistrict": "Select a district",

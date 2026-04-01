@@ -196,6 +196,7 @@
     "lastNameRequired": "Ազգանունը պարտադիր է",
     "usernameMinLength": "Օգտատերի անունը պետք է պարունակի նվազագույնը 3 նիշ",
     "passwordMinLength": "Գաղտնաբառը պետք է պարունակի նվազագույնը 6 նիշ",
+    "passwordComplexity": "Գաղտնաբառը պետք է պարունակի առնվազն մեկ տառ և մեկ թիվ",
     "selectCountry": "Ընտրեք երկիր",
     "selectCity": "Ընտրեք քաղաք",
     "selectDistrict": "Ընտրեք շրջան",
