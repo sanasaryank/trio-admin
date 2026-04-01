@@ -211,7 +211,10 @@
     "passwordRequired": "Password is required",
     "typeRequired": "Type is required",
     "legalAddressRequired": "Legal address is required",
-    "tinRequired": "TIN is required"
+    "tinRequired": "TIN is required",
+    "tinLength": "TIN must be 8 characters long",
+    "tinMaxLength": "TIN cannot be more than 8 characters",
+    "tinDigitsOnly": "TIN must contain only digits"
   },
   "pagination": {
     "rowsPerPage": "Rows per page:",

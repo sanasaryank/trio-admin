@@ -207,7 +207,10 @@
     "passwordRequired": "Գաղտնաբառը պարտադիր է",
     "typeRequired": "Տեսակը պարտադիր է",
     "legalAddressRequired": "Իրավական հասցեն պարտադիր է",
-    "tinRequired": "ՀՎՀՀ-ն պարտադիր է"
+    "tinRequired": "ՀՎՀՀ-ն պարտադիր է",
+    "tinLength": "ՀՎՀՀ-ն պետք է լինի 8 նիշ",
+    "tinMaxLength": "ՀՎՀՀ-ն չի կարող լինել 8 նիշից ավելի",
+    "tinDigitsOnly": "ՀՎՀՀ-ն պետք է պարունակի միայն թվանշաններ"
   },
   "pagination": {
     "rowsPerPage": "Տողեր էջում:",

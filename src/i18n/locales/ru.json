@@ -207,7 +207,10 @@
     "quantityMax": "Максимум 100",
     "typeRequired": "Тип обязателен",
     "legalAddressRequired": "Юридический адрес обязателен",
-    "tinRequired": "ИНН обязателен"
+    "tinRequired": "ИНН обязателен",
+    "tinLength": "ИНН должен состоять из 8 символов",
+    "tinMaxLength": "ИНН не может быть длиннее 8 символов",
+    "tinDigitsOnly": "ИНН должен содержать только цифры"
   },
   "pagination": {
     "rowsPerPage": "Строк на странице:",
