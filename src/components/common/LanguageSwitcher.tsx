@@ -1,16 +1,44 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconButton, Menu, MenuItem, ListItemText, Box } from '@mui/material';
-import { Language as LanguageIcon } from '@mui/icons-material';
+import { IconButton, Menu, MenuItem, ListItemText, Box, Typography } from '@mui/material';
 import { useState } from 'react';
 
 const languages = [
-  { code: 'hy', name: 'Հայերեն', flag: '🇦🇲' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'hy', name: 'Հայերեն', countryCode: 'am', shortCode: 'ARM' },
+  { code: 'ru', name: 'Русский', countryCode: 'ru', shortCode: 'RUS' },
+  { code: 'en', name: 'English', countryCode: 'us', shortCode: 'ENG' },
 ];
 
-export const LanguageSwitcher = () => {
+const FlagImage = ({ countryCode, name }: { countryCode: string; name: string }) => {
+  // Map some country codes if necessary (e.g. 'us' or other overrides)
+  const code = countryCode.toLowerCase();
+  
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Box
+        component="img"
+        src={`https://hatscripts.github.io/circle-flags/flags/${code}.svg`}
+        alt={`${name} flag`}
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          borderRadius: '50%',
+        }}
+      />
+    </Box>
+  );
+};
+
+export const LanguageSwitcher = ({ showShortCode = false }: { showShortCode?: boolean }) => {
   const { i18n } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -46,10 +74,34 @@ export const LanguageSwitcher = () => {
           px: 1,
         }}
       >
-        <Box component="span" sx={{ fontSize: '1.25rem' }}>
-          {currentLanguage.flag}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 28,
+            height: 28,
+          }}
+        >
+          <FlagImage 
+            countryCode={currentLanguage.countryCode} 
+            name={currentLanguage.name} 
+          />
         </Box>
-        <LanguageIcon />
+        {showShortCode && (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              ml: 1, 
+              fontSize: '0.75rem', 
+              fontWeight: 600, 
+              color: 'text.secondary',
+              letterSpacing: '0.05em'
+            }}
+          >
+            {currentLanguage.shortCode}
+          </Typography>
+        )}
       </IconButton>
       <Menu
         anchorEl={anchorEl}
@@ -64,8 +116,19 @@ export const LanguageSwitcher = () => {
             onClick={() => handleLanguageChange(language.code)}
             selected={language.code === i18n.language}
           >
-            <Box component="span" sx={{ mr: 2, fontSize: '1.25rem' }}>
-              {language.flag}
+            <Box 
+              sx={{ 
+                mr: 2, 
+                display: 'flex', 
+                alignItems: 'center',
+                width: 24,
+                height: 24,
+              }}
+            >
+              <FlagImage 
+                countryCode={language.countryCode} 
+                name={language.name} 
+              />
             </Box>
             <ListItemText>{language.name}</ListItemText>
           </MenuItem>

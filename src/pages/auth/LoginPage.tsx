@@ -7,32 +7,21 @@ import {
   Button,
   Typography,
   Alert,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemText,
 } from '@mui/material';
-import { Language as LanguageIcon } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
 import { useAppSnackbar } from '../../providers/AppSnackbarProvider';
 import { getErrorMessage } from '../../api/errors';
 import TextField from '../../components/ui/atoms/TextField';
-
-const languages = [
-  { code: 'hy', name: 'Հայերեն', flag: '\u{1F1E6}\u{1F1F2}' },
-  { code: 'ru', name: 'Русский', flag: '\u{1F1F7}\u{1F1FA}' },
-  { code: 'en', name: 'English', flag: '\u{1F1FA}\u{1F1F8}' },
-];
+import { LanguageSwitcher } from '../../components/common/LanguageSwitcher';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { login, isLoading } = useAuthStore();
   const { showError } = useAppSnackbar();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [localErrorKey, setLocalErrorKey] = useState<string | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,22 +39,6 @@ export const LoginPage = () => {
       showError(getErrorMessage(err));
     }
   };
-
-  const handleLanguageMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleLanguageMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLanguageChange = (languageCode: string) => {
-    i18n.changeLanguage(languageCode);
-    localStorage.setItem('language', languageCode);
-    handleLanguageMenuClose();
-  };
-
-  const currentLanguage = languages.find((lang) => lang.code === i18n.language) || languages[0];
 
   const displayedError = localErrorKey ? t(localErrorKey) : null;
 
@@ -184,45 +157,8 @@ export const LoginPage = () => {
           </Box>
 
           {/* Language Selector */}
-          <Box sx={{ mt: 4, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton
-              onClick={handleLanguageMenuOpen}
-              size="small"
-              sx={{
-                display: 'flex',
-                gap: 1,
-                px: 1,
-                color: 'text.secondary',
-              }}
-            >
-              <Box component="span" sx={{ fontSize: '1.25rem' }}>
-                {currentLanguage.flag}
-              </Box>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                {currentLanguage.name}
-              </Typography>
-              <LanguageIcon fontSize="small" />
-            </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleLanguageMenuClose}
-              transformOrigin={{ horizontal: 'left', vertical: 'top' }}
-              anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
-            >
-              {languages.map((language) => (
-                <MenuItem
-                  key={language.code}
-                  onClick={() => handleLanguageChange(language.code)}
-                  selected={language.code === i18n.language}
-                >
-                  <Box component="span" sx={{ mr: 2, fontSize: '1.25rem' }}>
-                    {language.flag}
-                  </Box>
-                  <ListItemText>{language.name}</ListItemText>
-                </MenuItem>
-              ))}
-            </Menu>
+          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-start' }}>
+            <LanguageSwitcher showShortCode={true} />
           </Box>
         </Box>
       </Box>
