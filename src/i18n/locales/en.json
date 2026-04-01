@@ -151,7 +151,7 @@
     "unblockQRMessage": "Are you sure you want to unblock QR code {{qrText}}?",
     "changeQRTypeTitle": "Change QR type?",
     "changeQRTypeMessage": "Are you sure you want to change QR code {{qrText}} to {{type}}?",
-    "type": "Type",
+    "qrType": "Type",
     "static": "Static",
     "dynamic": "Dynamic",
     "assigned": "Assigned",
@@ -435,7 +435,6 @@
     "addTitle": "Add New Campaign",
     "editTitle": "Edit Campaign",
     "search": "Search campaigns...",
-    "searchPlaceholder": "Search campaigns...",
     "noCampaignsFound": "No campaigns found"
   },
   "creatives": {
@@ -452,7 +451,7 @@
     "minWidth": "Min Width",
     "maxWidth": "Max Width",
     "dataUrl": "Data URL",
-    "preview": "Preview",
+    "previewTitle": "Preview",
     "selectCampaign": "Select Campaign",
     "blockConfirmTitle": "Block creative?",
     "unblockConfirmTitle": "Unblock creative?",
