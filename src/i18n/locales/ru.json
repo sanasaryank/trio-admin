@@ -57,7 +57,9 @@
     "email": "Email",
     "password": "Пароль",
     "signIn": "Войти",
-    "invalidCredentials": "Неверный email или пароль"
+    "invalidCredentials": "Неверный email или пароль",
+    "fillAllFields": "Пожалуйста, заполните все поля",
+    "loginFailed": "Ошибка входа"
   },
   "menu": {
     "restaurants": "Рестораны",
@@ -122,7 +124,9 @@
     "lastClientActivity": "Последняя активность клиента",
     "lastRestaurantActivity": "Последняя активность ресторана",
     "statistics": "Статистика",
-    "configurationErrors": "Ошибки конфигурации",    "qrCode": "QR код",    "qrCodes": "QR-коды",
+    "configurationErrors": "Ошибки конфигурации",
+    "qrCode": "QR код",
+    "qrCodes": "QR-коды",
     "qrCodesTitle": "QR Коды - {{name}}",
     "addQRCodes": "Добавить QR коды",
     "createQRCodes": "Создать QR коды",
@@ -141,7 +145,9 @@
     "changeQRTypeMessage": "Вы уверены, что хотите изменить QR код \"{{qrText}}\" на {{type}}？",
     "qrStatus": "Статус QR",
     "static": "Статический",
-    "dynamic": "Динамический",    "assigned": "Назначен",    "assignedFilter": "Назначенные",
+    "dynamic": "Динамический",
+    "assigned": "Назначен",
+    "assignedFilter": "Назначенные",
     "unassignedFilter": "Не назначенные",
     "searchPlaceholder": "Поиск по ID или названию",
     "blockConfirmTitle": "Заблокировать ресторан?",
@@ -374,7 +380,8 @@
       "placements": "Рекламные слоты",
       "placementsHelper": "Оставьте пустым для таргетинга на все рекламные слоты",
       "blocked": "Заблокировано"
-    },    "targeting": {
+    },
+    "targeting": {
       "searchRestaurants": "Поиск ресторанов...",
       "addRestaurants": "Добавить рестораны",
       "restaurant": "Ресторан",
@@ -394,7 +401,8 @@
       "allTypes": "Все типы",
       "allMenuTypes": "Все типы меню",
       "allPriceSegments": "Все ценовые сегменты"
-    },    "spendStrategies": {
+    },
+    "spendStrategies": {
       "even": "Равномерно",
       "asap": "Как можно скорее",
       "frontload": "В начале"
