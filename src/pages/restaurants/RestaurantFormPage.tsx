@@ -63,33 +63,51 @@ const createRestaurantSchema = (t: (key: string) => string) => z.object({
     username: z.string().min(1, t('validation.usernameRequired')),
     password: z.string(),
     changePassword: z.boolean(),
-  }).refine(
-    (data) => {
-      // Password is required if changePassword is true or in create mode
-      if (data.changePassword && !data.password) {
-        return false;
+  }).superRefine((data, ctx) => {
+    // Password is required if changePassword is true
+    if (data.changePassword) {
+      if (!data.password || data.password.length < 6) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('validation.passwordMinLength'),
+          path: ['password'],
+        });
+      } else {
+        const hasLetter = /[a-zA-Z]/.test(data.password);
+        const hasNumber = /[0-9]/.test(data.password);
+        if (!hasLetter || !hasNumber) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('validation.passwordComplexity'),
+            path: ['password'],
+          });
+        }
       }
-      return true;
-    },
-    {
-      message: t('validation.passwordRequired'),
-      path: ['password'],
     }
-  ),
+  }),
   isBlocked: z.boolean(),
-}).refine(
-  (data) => {
-    // Admin password is required if adminChangePassword is true or in create mode
-    if (data.adminChangePassword && !data.adminPassword) {
-      return false;
+}).superRefine((data, ctx) => {
+  // Admin password is required if adminChangePassword is true
+  if (data.adminChangePassword) {
+    if (!data.adminPassword || data.adminPassword.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('validation.passwordMinLength'),
+        path: ['adminPassword'],
+      });
+    } else {
+      const hasLetter = /[a-zA-Z]/.test(data.adminPassword);
+      const hasNumber = /[0-9]/.test(data.adminPassword);
+      if (!hasLetter || !hasNumber) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('validation.passwordComplexity'),
+          path: ['adminPassword'],
+        });
+      }
     }
-    return true;
-  },
-  {
-    message: t('validation.passwordRequired'),
-    path: ['adminPassword'],
   }
-);
+});
 
 type RestaurantFormValues = z.infer<ReturnType<typeof createRestaurantSchema>>;
 
