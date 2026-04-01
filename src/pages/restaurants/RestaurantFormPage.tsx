@@ -37,7 +37,7 @@ const createRestaurantSchema = (t: (key: string) => string) => z.object({
     RUS: z.string().min(1, t('validation.nameRequired')),
     ENG: z.string().min(1, t('validation.nameRequired')),
   }),
-  crmUrl: z.string().url(t('validation.url')),
+  crmUrl: z.string().url(t('validation.url')).refine(val => val.includes('.'), t('validation.url')),
   countryId: z.string().min(1, t('validation.selectCountry')),
   cityId: z.string().min(1, t('validation.selectCity')),
   districtId: z.string().min(1, t('validation.selectDistrict')),
@@ -58,7 +58,7 @@ const createRestaurantSchema = (t: (key: string) => string) => z.object({
   adminPassword: z.string(),
   adminChangePassword: z.boolean(),
   connectionData: z.object({
-    host: z.string().min(1, t('validation.hostRequired')),
+    host: z.string().min(1, t('validation.hostRequired')).refine(val => val.includes('.'), t('validation.url')),
     port: z.number().min(1, t('validation.portRequired')),
     username: z.string().min(1, t('validation.usernameRequired')),
     password: z.string(),

@@ -380,7 +380,7 @@ export const RestaurantQRPage = () => {
       },
       {
         id: 'type',
-        label: t('restaurants.type'),
+        label: t('restaurants.qrType'),
         sortable: true,
         render: (qr) => {
           try {
@@ -514,7 +514,7 @@ export const RestaurantQRPage = () => {
         <Box sx={{ mt: 2 }}>
           <Select
             name="type"
-            label={t('restaurants.type')}
+            label={t('restaurants.qrType')}
             value={tempFilters.type || 'all'}
             onChange={(value) => updateTempFilter('type', value as TypeFilter)}
             options={[
@@ -572,7 +572,7 @@ export const RestaurantQRPage = () => {
             <FormField
               name="type"
               control={control}
-              label={t('restaurants.type')}
+              label={t('restaurants.qrType')}
               type="select"
               required
               disabled={isSubmitting}

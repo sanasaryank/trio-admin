@@ -451,7 +451,7 @@
     "minWidth": "Мин. ширина",
     "maxWidth": "Макс. ширина",
     "dataUrl": "URL данных",
-    "preview": "Предпросмотр",
+    "previewTitle": "Предпросмотр",
     "selectCampaign": "Выберите кампанию",
     "blockConfirmTitle": "Заблокировать креатив?",
     "unblockConfirmTitle": "Разблокировать креатив?",
