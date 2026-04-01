@@ -87,7 +87,12 @@ export const FormDialogLayout: React.FC<FormDialogLayoutProps> = ({
 }) => (
   <Dialog
     open={open}
-    onClose={disableClose ? () => {} : onClose}
+    onClose={(_event, reason) => {
+      if (disableClose) return;
+      if (reason !== 'backdropClick') {
+        onClose();
+      }
+    }}
     disableEscapeKeyDown={disableClose}
     maxWidth={maxWidth}
     fullWidth={fullWidth}
