@@ -27,19 +27,38 @@ const DEFAULT_CENTER: [number, number] = [
   env.mapDefaultCenter.lng,
 ];
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 interface LocationPickerProps {
   lat: number;
   lng: number;
   onChange: (lat: number, lng: number) => void;
   onAddressChange?: (address: string) => void;
   onLocationMetadataChange?: (metadata: { city?: string; district?: string }) => void;
-  cities?: Array<{ id: string; name: string }>;
+  cities?: Array<{ id: string; name: string; countryId: string }>;
   districts?: Array<{ id: string; name: string; cityId: string }>;
+  countries?: Array<{ id: string; name: string }>;
+  selectedCountryId?: string;
+  selectedCityId?: string;
+  selectedDistrictId?: string;
 }
 
-/**
- * Component for handling map click events
- */
+interface GeocodingResult {
+  lat: number;
+  lng: number;
+  display_name: string;
+}
+
+/** Bounding box returned by Nominatim: [south_lat, north_lat, west_lng, east_lng] */
+interface RegionBounds {
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+}
+
+// ─── Map sub-components ──────────────────────────────────────────────────────
+
 const MapClickHandler = React.memo<{ onChange: (lat: number, lng: number) => void }>(
   ({ onChange }) => {
     useMapEvents({
@@ -50,32 +69,21 @@ const MapClickHandler = React.memo<{ onChange: (lat: number, lng: number) => voi
     return null;
   }
 );
-
 MapClickHandler.displayName = 'MapClickHandler';
 
-/**
- * Component for updating map center when position changes
- */
 const MapCenterUpdater = React.memo<{ position: [number, number] }>(({ position }) => {
   const map = useMap();
-
   useEffect(() => {
     map.setView(position, map.getZoom());
   }, [position, map]);
-
   return null;
 });
-
 MapCenterUpdater.displayName = 'MapCenterUpdater';
 
-/**
- * Shared state for rate limiting Nominatim API requests
- */
+// ─── Rate limit ──────────────────────────────────────────────────────────────
+
 let lastGeocodingTime = 0;
 
-/**
- * Respect Nominatim rate limit (1 request per second)
- */
 const respectRateLimit = async () => {
   const now = Date.now();
   const timeSinceLastRequest = now - lastGeocodingTime;
@@ -85,34 +93,55 @@ const respectRateLimit = async () => {
   lastGeocodingTime = Date.now();
 };
 
-interface GeocodingResult {
-  lat: number;
-  lng: number;
-  display_name: string;
-}
+// ─── Nominatim helpers ───────────────────────────────────────────────────────
+
+const NOMINATIM_HEADERS = {
+  'Accept-Language': 'hy',
+  'User-Agent': 'TrioAdmin/1.0.0 (contact: admin@trio.am)',
+};
 
 /**
- * Geocode address to coordinates using Nominatim API returning multiple results
+ * Search for addresses within an optional viewbox.
+ * When `viewbox` is provided the query is the raw user input only —
+ * geographic scoping is handled entirely by the bounding-box + bounded=1.
  */
-const forwardGeocode = async (query: string): Promise<GeocodingResult[]> => {
+const forwardGeocode = async (
+  query: string,
+  options?: {
+    viewbox?: RegionBounds;
+    countrycodes?: string;
+  }
+): Promise<GeocodingResult[]> => {
   try {
     await respectRateLimit();
 
-    // Add country code hint for better results if needed, but keeping it general for now
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10`,
-      {
-        headers: {
-          'Accept-Language': 'hy',
-          'User-Agent': 'TrioSuperAdmin/1.0.0 (contact: admin@trio.am)',
-        },
-      }
+    const params = new URLSearchParams({
+      format: 'json',
+      q: query,
+      limit: '10',
+      addressdetails: '1',
+    });
+
+    if (options?.viewbox) {
+      const { west, north, east, south } = options.viewbox;
+      params.append('viewbox', `${west},${north},${east},${south}`);
+      params.append('bounded', '1');
+    }
+
+    if (options?.countrycodes) {
+      params.append('countrycodes', options.countrycodes);
+    }
+
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+      { headers: NOMINATIM_HEADERS }
     );
 
-    if (!response.ok) return [];
-    const data = await response.json();
-    if (!data || data.length === 0) return [];
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data?.length) return [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.map((item: any) => ({
       lat: parseFloat(item.lat),
       lng: parseFloat(item.lon),
@@ -125,8 +154,55 @@ const forwardGeocode = async (query: string): Promise<GeocodingResult[]> => {
 };
 
 /**
- * Reverse geocode coordinates to get address and location metadata using Nominatim API
- * Note: May fail due to CORS restrictions in development (localhost)
+ * Geocode a region name (e.g. "Avan, Yerevan") and return its centre + bounding box.
+ * The bounding box is what Nominatim considers the boundary of the place.
+ */
+const geocodeRegion = async (
+  locationName: string,
+  countrycodes?: string
+): Promise<{ lat: number; lng: number; bounds: RegionBounds } | null> => {
+  try {
+    await respectRateLimit();
+
+    const params = new URLSearchParams({
+      format: 'json',
+      q: locationName,
+      limit: '1',
+      addressdetails: '1',
+    });
+
+    if (countrycodes) params.append('countrycodes', countrycodes);
+
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+      { headers: NOMINATIM_HEADERS }
+    );
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data?.length) return null;
+
+    const item = data[0];
+    const bb = item.boundingbox; // [south, north, west, east] as strings
+
+    return {
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      bounds: {
+        south: parseFloat(bb[0]),
+        north: parseFloat(bb[1]),
+        west: parseFloat(bb[2]),
+        east: parseFloat(bb[3]),
+      },
+    };
+  } catch (error) {
+    logger.error('Region geocoding failed', error as Error);
+    return null;
+  }
+};
+
+/**
+ * Reverse-geocode coordinates → address + city / district names.
  */
 const reverseGeocode = async (
   lat: number,
@@ -139,24 +215,17 @@ const reverseGeocode = async (
   try {
     await respectRateLimit();
 
-    const response = await fetch(
+    const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      {
-        headers: {
-          'Accept-Language': 'hy',
-          'User-Agent': 'TrioSuperAdmin/1.0.0 (contact: admin@trio.am)',
-        },
-      }
+      { headers: NOMINATIM_HEADERS }
     );
 
-    if (!response.ok) {
-      logger.warn('Reverse geocoding failed', { status: response.status });
+    if (!res.ok) {
+      logger.warn('Reverse geocoding failed', { status: res.status });
       return { address: null, city: null, district: null };
     }
 
-    const data = await response.json();
-
-    // Build address from components
+    const data = await res.json();
     const address = data.address;
     const parts: string[] = [];
 
@@ -167,7 +236,6 @@ const reverseGeocode = async (
       parts.push(address.city || address.town || address.village);
     }
 
-    // Extract city (marz/province) and district
     const city = address.state || address.county || address.city || address.town || address.village || null;
     const district =
       address.suburb ||
@@ -182,7 +250,6 @@ const reverseGeocode = async (
       district,
     };
   } catch (error) {
-    // Silently fail on CORS or network errors (common in localhost development)
     if (error instanceof TypeError && error.message.includes('fetch')) {
       logger.info('Reverse geocoding unavailable (CORS restriction)');
     } else {
@@ -193,19 +260,44 @@ const reverseGeocode = async (
 };
 
 /**
- * LocationPicker component for selecting a location on a map
- * Uses Leaflet for map rendering and allows click/drag to set coordinates
+ * Resolve the country code (ISO 3166-1 alpha-2) from a country name.
+ * Handles both Armenian and English names used in the dictionary.
  */
+const resolveCountryCode = (name: string | undefined): string | undefined => {
+  if (!name) return undefined;
+  const lower = name.toLowerCase();
+  if (lower.includes('armenia') || name.includes('Հայաստան')) return 'am';
+  if (lower.includes('georgia') || name.includes('Վրաստusage')) return 'ge';
+  if (lower.includes('russia') || name.includes('러시다')) return 'ru';
+  // Fall-through – no hard restriction for unknown countries
+  return undefined;
+};
+
+// ─── LocationPicker Component ────────────────────────────────────────────────
+
 export const LocationPicker = React.memo<LocationPickerProps>(
-  ({ lat, lng, onChange, onAddressChange, onLocationMetadataChange, cities, districts }) => {
+  ({
+    lat,
+    lng,
+    onChange,
+    onAddressChange,
+    onLocationMetadataChange,
+    cities,
+    districts,
+    countries,
+    selectedCountryId,
+    selectedCityId,
+    selectedDistrictId,
+  }) => {
     const { t } = useTranslation();
     const markerRef = useRef<L.Marker>(null);
     const searchContainerRef = useRef<HTMLDivElement>(null);
 
-    // Use default center (Yerevan) if coordinates are 0,0 or invalid
+    // ── coordinate helpers ──
     const isValidCoordinates = lat !== 0 && lng !== 0 && lat !== null && lng !== null;
     const initialPosition: [number, number] = isValidCoordinates ? [lat, lng] : DEFAULT_CENTER;
 
+    // ── local state ──
     const [position, setPosition] = useState<[number, number]>(initialPosition);
     const [isGeocoding, setIsGeocoding] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -213,56 +305,46 @@ export const LocationPicker = React.memo<LocationPickerProps>(
     const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
     const [showResults, setShowResults] = useState(false);
     const skipNextSearchRef = useRef(false);
+    const isFirstLoadRef = useRef(true);
 
-    // Update position when props change
+    /**
+     * Refs that store the *current* region bounds and country code.
+     * Used inside `handleSearch` so the callback never captures stale values.
+     */
+    const regionBoundsRef = useRef<RegionBounds | null>(null);
+    const countryCodeRef = useRef<string | undefined>(undefined);
+
+    // ── sync position from props ──
     useEffect(() => {
       const isValid = lat !== 0 && lng !== 0 && lat !== null && lng !== null;
       setPosition(isValid ? [lat, lng] : DEFAULT_CENTER);
     }, [lat, lng]);
 
-    // Close results when clicking outside
+    // ── close dropdown on outside click ──
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
           setShowResults(false);
         }
       };
-
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    /**
-     * Normalize location name for comparison
-     */
-    const normalizeLocationName = (name: string): string => {
-      return name
-        .toLowerCase()
-        .trim()
-        .replace(/\s*-\s*/g, ' ')
-        .replace(/\s+/g, ' ');
-    };
+    // ── name-matching helpers ──
+    const normalizeLocationName = (name: string): string =>
+      name.toLowerCase().trim().replace(/\s*-\s*/g, ' ').replace(/\s+/g, ' ');
 
-    /**
-     * Check if two location names match
-     */
     const namesMatch = (name1: string, name2: string): boolean => {
-      const normalized1 = normalizeLocationName(name1);
-      const normalized2 = normalizeLocationName(name2);
-
-      if (normalized1 === normalized2) return true;
-
-      const words1 = normalized1.split(' ').filter((w) => w.length > 0);
-      const words2 = normalized2.split(' ').filter((w) => w.length > 0);
-
-      if (words1.length !== words2.length || words1.length === 0) return false;
-
-      return words1.every((word, index) => word === words2[index]);
+      const n1 = normalizeLocationName(name1);
+      const n2 = normalizeLocationName(name2);
+      if (n1 === n2) return true;
+      const w1 = n1.split(' ').filter(w => w.length > 0);
+      const w2 = n2.split(' ').filter(w => w.length > 0);
+      if (w1.length !== w2.length || w1.length === 0) return false;
+      return w1.every((word, i) => word === w2[i]);
     };
 
-    /**
-     * Find matching city and district from the geocoded data
-     */
     const findMatchingLocation = useCallback(
       (cityName: string | null, districtName: string | null) => {
         if (!cities || !districts) return { cityId: undefined, districtId: undefined };
@@ -271,44 +353,37 @@ export const LocationPicker = React.memo<LocationPickerProps>(
         let matchedDistrictId: string | undefined;
 
         if (cityName) {
-          const matchedCity = cities.find((c) => namesMatch(c.name, cityName));
-          matchedCityId = matchedCity?.id;
+          matchedCityId = cities.find(c => namesMatch(c.name, cityName))?.id;
         }
 
         if (districtName) {
           if (matchedCityId) {
-            const matchedDistrict = districts.find(
-              (d) => d.cityId === matchedCityId && namesMatch(d.name, districtName)
-            );
-            matchedDistrictId = matchedDistrict?.id;
+            matchedDistrictId = districts.find(
+              d => d.cityId === matchedCityId && namesMatch(d.name, districtName)
+            )?.id;
           }
-
           if (!matchedDistrictId && !matchedCityId) {
-            const matchedDistrict = districts.find((d) => namesMatch(d.name, districtName));
-            if (matchedDistrict) {
-              matchedDistrictId = matchedDistrict.id;
-              matchedCityId = matchedDistrict.cityId;
+            const matched = districts.find(d => namesMatch(d.name, districtName));
+            if (matched) {
+              matchedDistrictId = matched.id;
+              matchedCityId = matched.cityId;
             }
           }
         }
-
         return { cityId: matchedCityId, districtId: matchedDistrictId };
       },
       [cities, districts]
     );
 
-    /**
-     * Update address and location metadata from coordinates
-     */
+    // ── reverse-geocode after click / drag ──
     const updateAddress = useCallback(
-      async (lat: number, lng: number) => {
+      async (newLat: number, newLng: number) => {
         setIsGeocoding(true);
-        const result = await reverseGeocode(lat, lng);
+        const result = await reverseGeocode(newLat, newLng);
 
         if (result.address && onAddressChange) {
           onAddressChange(result.address);
         }
-
         if (onLocationMetadataChange) {
           const { cityId, districtId } = findMatchingLocation(result.city, result.district);
           onLocationMetadataChange({
@@ -318,28 +393,26 @@ export const LocationPicker = React.memo<LocationPickerProps>(
             districtId,
           } as any);
         }
-
         setIsGeocoding(false);
       },
       [onAddressChange, onLocationMetadataChange, findMatchingLocation]
     );
 
-    /**
-     * Handle result selection
-     */
-    const handleSelectResult = useCallback((result: GeocodingResult) => {
-      setPosition([result.lat, result.lng]);
-      onChange(result.lat, result.lng);
-      updateAddress(result.lat, result.lng);
-      setSearchResults([]);
-      setShowResults(false);
-      skipNextSearchRef.current = true;
-      setSearchQuery(result.display_name);
-    }, [onChange, updateAddress]);
+    // ── result selection ──
+    const handleSelectResult = useCallback(
+      (result: GeocodingResult) => {
+        setPosition([result.lat, result.lng]);
+        onChange(result.lat, result.lng);
+        updateAddress(result.lat, result.lng);
+        setSearchResults([]);
+        setShowResults(false);
+        skipNextSearchRef.current = true;
+        setSearchQuery(result.display_name);
+      },
+      [onChange, updateAddress]
+    );
 
-    /**
-     * Handle address search
-     */
+    // ── address search (uses refs, so deps stay stable) ──
     const handleSearch = useCallback(async (query: string) => {
       if (!query.trim() || query.length < 3) {
         setSearchResults([]);
@@ -349,7 +422,10 @@ export const LocationPicker = React.memo<LocationPickerProps>(
 
       setIsSearching(true);
 
-      const results = await forwardGeocode(query);
+      const results = await forwardGeocode(query, {
+        viewbox: regionBoundsRef.current ?? undefined,
+        countrycodes: countryCodeRef.current,
+      });
 
       if (results.length > 0) {
         setSearchResults(results);
@@ -362,14 +438,13 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       setIsSearching(false);
     }, []);
 
-    // Debounced search when query changes
+    // ── debounced auto-search ──
     useEffect(() => {
       const timer = setTimeout(() => {
         if (skipNextSearchRef.current) {
           skipNextSearchRef.current = false;
           return;
         }
-
         if (searchQuery.trim().length >= 3) {
           handleSearch(searchQuery);
         } else {
@@ -381,9 +456,7 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       return () => clearTimeout(timer);
     }, [searchQuery, handleSearch]);
 
-    /**
-     * Handle key press in search field (Enter to search immediately)
-     */
+    // ── Enter key = immediate search ──
     const handleKeyPress = (e: React.KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -391,9 +464,7 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       }
     };
 
-    /**
-     * Handle marker drag end event
-     */
+    // ── marker drag ──
     const handleDragEnd = useCallback(() => {
       const marker = markerRef.current;
       if (marker) {
@@ -404,9 +475,7 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       }
     }, [onChange, updateAddress]);
 
-    /**
-     * Handle map click event
-     */
+    // ── map click ──
     const handleMapClick = useCallback(
       (newLat: number, newLng: number) => {
         setPosition([newLat, newLng]);
@@ -416,14 +485,62 @@ export const LocationPicker = React.memo<LocationPickerProps>(
       [onChange, updateAddress]
     );
 
-    /**
-     * Formatted coordinate string
-     */
+    // ──────────────────────────────────────────────────────────────────────────
+    // KEY EFFECT: when country / city / district selection changes,
+    //   1. resolve the country code → stored in countryCodeRef
+    //   2. geocode the most specific selection → get its bounding box
+    //   3. store bounding box in regionBoundsRef
+    //   4. centre the map on the resolved location
+    // ──────────────────────────────────────────────────────────────────────────
+    useEffect(() => {
+      // On first load with valid existing coordinates, keep the position
+      if (isFirstLoadRef.current) {
+        isFirstLoadRef.current = false;
+
+        // Still resolve country code + region bounds even on initial load
+        const countryName = countries?.find(c => c.id === selectedCountryId)?.name;
+        countryCodeRef.current = resolveCountryCode(countryName);
+
+        if (isValidCoordinates) return; // don't pan on initial load when editing
+      }
+
+      const syncRegion = async () => {
+        // Resolve human-readable names from IDs
+        const countryName = countries?.find(c => c.id === selectedCountryId)?.name;
+        const cityName = cities?.find(c => c.id === selectedCityId)?.name;
+        const districtName = districts?.find(d => d.id === selectedDistrictId)?.name;
+
+        // Update country code ref
+        countryCodeRef.current = resolveCountryCode(countryName);
+
+        // Build query from most-specific → least-specific
+        const queryParts = [districtName, cityName, countryName].filter(Boolean);
+        if (queryParts.length === 0) {
+          regionBoundsRef.current = null;
+          return;
+        }
+
+        const locationQuery = queryParts.join(', ');
+        const region = await geocodeRegion(locationQuery, countryCodeRef.current);
+
+        if (region) {
+          regionBoundsRef.current = region.bounds;
+          setPosition([region.lat, region.lng]);
+          onChange(region.lat, region.lng);
+        }
+      };
+
+      syncRegion();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCountryId, selectedCityId, selectedDistrictId]);
+
+    // ── formatted coords ──
     const coordinatesText = useMemo(
       () => `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`,
       [position]
     );
 
+    // ── render ──
     return (
       <Box>
         {/* Address Search */}

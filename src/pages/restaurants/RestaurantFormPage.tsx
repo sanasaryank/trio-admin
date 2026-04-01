@@ -721,6 +721,10 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
               onLocationMetadataChange={handleLocationMetadataChange}
               cities={cities}
               districts={districts}
+              countries={countries}
+              selectedCountryId={selectedCountryId}
+              selectedCityId={selectedCityId}
+              selectedDistrictId={watch('districtId')}
             />
           </Grid>
 
