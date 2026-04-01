@@ -42,7 +42,11 @@ const createRestaurantSchema = (t: (key: string) => string) => z.object({
   cityId: z.string().min(1, t('validation.selectCity')),
   districtId: z.string().min(1, t('validation.selectDistrict')),
   legalAddress: z.string().min(1, t('validation.legalAddressRequired')),
-  tin: z.string().min(1, t('validation.tinRequired')),
+  tin: z.string()
+    .min(1, t('validation.tinRequired'))
+    .min(8, t('validation.tinLength'))
+    .max(8, t('validation.tinMaxLength'))
+    .regex(/^\d+$/, t('validation.tinDigitsOnly')),
   lat: z.number(),
   lng: z.number(),
   typeId: z.array(z.string()).min(1, t('validation.selectRestaurantType')),

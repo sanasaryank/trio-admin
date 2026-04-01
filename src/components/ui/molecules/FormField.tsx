@@ -36,6 +36,8 @@ export interface FormFieldProps {
   helperText?: string;
   /** Атрибут autocomplete */
   autoComplete?: string;
+  /** Дополнительные props для Input (для text/date) */
+  InputProps?: any;
 }
 
 /**
@@ -86,6 +88,7 @@ const FormField = ({
   rows,
   helperText,
   autoComplete,
+  InputProps,
 }: FormFieldProps) => {
   return (
     <Controller
@@ -234,6 +237,7 @@ const FormField = ({
                 multiline={multiline}
                 rows={rows}
                 autoComplete={autoComplete}
+                InputProps={InputProps}
               />
             );
         }
