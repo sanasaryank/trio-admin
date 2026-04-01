@@ -31,15 +31,15 @@ export const LoginPage = () => {
   const { showError } = useAppSnackbar();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [localErrorKey, setLocalErrorKey] = useState<string | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null);
+    setLocalErrorKey(null);
 
     if (!username || !password) {
-      setLocalError('Please fill in all fields');
+      setLocalErrorKey('auth.fillAllFields');
       return;
     }
 
@@ -66,6 +66,8 @@ export const LoginPage = () => {
   };
 
   const currentLanguage = languages.find((lang) => lang.code === i18n.language) || languages[0];
+
+  const displayedError = localErrorKey ? t(localErrorKey) : null;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -114,12 +116,26 @@ export const LoginPage = () => {
             {t('auth.signIn')}
           </Typography>
 
-          {/* Validation error */}
-          {localError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {localError}
-            </Alert>
-          )}
+          {/* Error Alert with high fidelity UI/UX */}
+          <Box sx={{ mb: displayedError ? 3 : 0, minHeight: displayedError ? 'auto' : 0 }}>
+            {displayedError && (
+              <Alert 
+                severity="error" 
+                variant="outlined"
+                sx={{ 
+                  borderRadius: 2,
+                  borderWidth: 2,
+                  animation: 'fadeInSlide 0.3s ease-out',
+                  '@keyframes fadeInSlide': {
+                    '0%': { opacity: 0, transform: 'translateY(-10px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' },
+                  },
+                }}
+              >
+                {displayedError}
+              </Alert>
+            )}
+          </Box>
 
           {/* Login Form */}
           <Box component="form" onSubmit={handleSubmit} noValidate>

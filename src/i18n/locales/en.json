@@ -57,7 +57,9 @@
     "email": "Email",
     "password": "Password",
     "signIn": "Sign In",
-    "invalidCredentials": "Invalid email or password"
+    "invalidCredentials": "Invalid email or password",
+    "fillAllFields": "Please fill in all fields",
+    "loginFailed": "Login failed"
   },
   "menu": {
     "restaurants": "Restaurants",
