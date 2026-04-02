@@ -152,6 +152,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
     formState: { errors },
   } = useForm<RestaurantFormValues>({
     resolver: zodResolver(restaurantSchema),
+    mode: 'onBlur',
     defaultValues: {
       name: { ARM: '', RUS: '', ENG: '' },
       crmUrl: '',
@@ -712,7 +713,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
 
           <Grid size={12}>
             <Typography variant="subtitle2" gutterBottom>
-              {t('restaurants.location')} *
+              {t('restaurants.location')}
             </Typography>
             <LocationPicker
               lat={currentLat}

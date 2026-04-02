@@ -624,6 +624,7 @@ export const LocationPicker = React.memo<LocationPickerProps>(
           zoom={13}
           style={{ height: '400px', width: '100%', borderRadius: '8px' }}
           scrollWheelZoom={false}
+          attributionControl={false}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
