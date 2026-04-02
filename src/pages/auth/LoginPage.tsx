@@ -212,7 +212,7 @@ export const LoginPage = () => {
               fontSize: { xs: '2rem', md: '2.5rem' },
             }}
           >
-            Triosoft Company
+            {t('auth.brandTitle')}
           </Typography>
           <Typography
             variant="h6"
@@ -222,7 +222,7 @@ export const LoginPage = () => {
               fontSize: { xs: '1.1rem', md: '1.25rem' },
             }}
           >
-            Innovate, Integrate, Inspire
+            {t('auth.brandSubtitle')}
           </Typography>
           <Typography
             variant="body1"
@@ -232,9 +232,7 @@ export const LoginPage = () => {
               fontSize: { xs: '0.9rem', md: '1rem' },
             }}
           >
-            Our main goal is to give our customers all the tools for managing a
-            business with our platform. Our software resources is dedicated to
-            ensuring security of our customers data.
+            {t('auth.brandDescription')}
           </Typography>
         </Box>
       </Box>
