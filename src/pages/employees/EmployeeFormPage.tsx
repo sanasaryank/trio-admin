@@ -78,6 +78,7 @@ export const EmployeeFormPage = forwardRef<EmployeeFormHandle, EmployeeFormPageP
     watch,
   } = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
+    mode: 'onBlur',
     defaultValues: {
       firstName: '',
       lastName: '',

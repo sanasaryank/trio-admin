@@ -148,6 +148,7 @@ export const RestaurantQRPage = () => {
     formState: { isSubmitting },
   } = useForm<QRBatchFormData>({
     resolver: zodResolver(qrBatchSchema),
+    mode: 'onBlur',
     defaultValues: {
       quantity: 1,
       type: 'Static',
