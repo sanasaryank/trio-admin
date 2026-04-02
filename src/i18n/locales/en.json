@@ -59,7 +59,10 @@
     "signIn": "Sign In",
     "invalidCredentials": "Invalid email or password",
     "fillAllFields": "Please fill in all fields",
-    "loginFailed": "Login failed"
+    "loginFailed": "Login failed",
+    "brandTitle": "Triosoft Company",
+    "brandSubtitle": "Innovate, Integrate, Inspire",
+    "brandDescription": "Our main goal is to give our customers all the tools for managing a business with our platform. Our software resources is dedicated to ensuring security of our customers data."
   },
   "menu": {
     "restaurants": "Restaurants",
