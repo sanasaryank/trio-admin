@@ -37,15 +37,6 @@ export const ConnectionDataFields: React.FC<ConnectionDataFieldsProps> = ({
   const { t } = useTranslation();
 
   /**
-   * Определяем, обязателен ли пароль
-   * В режиме создания - всегда обязателен
-   * В режиме редактирования - обязателен только если чекбокс "Сменить пароль" включен
-   */
-  const isPasswordRequired = useMemo(() => {
-    return !isEditMode || changePassword;
-  }, [isEditMode, changePassword]);
-
-  /**
    * Плейсхолдер для поля пароля
    */
   const passwordPlaceholder = useMemo(() => {
@@ -114,7 +105,6 @@ export const ConnectionDataFields: React.FC<ConnectionDataFieldsProps> = ({
             control={control}
             label={t('connectionData.password')}
             type="password"
-            required={isPasswordRequired}
             disabled={disabled || (isEditMode && !changePassword)}
             placeholder={passwordPlaceholder}
             autoComplete="new-password"

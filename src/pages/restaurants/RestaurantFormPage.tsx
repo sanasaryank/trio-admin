@@ -63,27 +63,6 @@ const createRestaurantSchema = (t: (key: string) => string) => z.object({
     username: z.string().min(1, t('validation.usernameRequired')),
     password: z.string(),
     changePassword: z.boolean(),
-  }).superRefine((data, ctx) => {
-    // Password is required if changePassword is true
-    if (data.changePassword) {
-      if (!data.password || data.password.length < 6) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: t('validation.passwordMinLength'),
-          path: ['password'],
-        });
-      } else {
-        const hasLetter = /[a-zA-Z]/.test(data.password);
-        const hasNumber = /[0-9]/.test(data.password);
-        if (!hasLetter || !hasNumber) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: t('validation.passwordComplexity'),
-            path: ['password'],
-          });
-        }
-      }
-    }
   }),
   isBlocked: z.boolean(),
 }).superRefine((data, ctx) => {
