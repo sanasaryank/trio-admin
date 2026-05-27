@@ -10,6 +10,7 @@ import {
   QrCode as QrCodeIcon,
   BarChart as BarChartIcon,
   Error as ErrorIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 
 // API
@@ -76,7 +77,7 @@ interface FormDialogState {
 export const RestaurantsListPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { showError } = useAppSnackbar();
+  const { showError, showSuccess } = useAppSnackbar();
 
   // Form dialog state
   const [formDialog, setFormDialog] = useState<FormDialogState>({
@@ -360,6 +361,19 @@ export const RestaurantsListPage = () => {
     [navigate]
   );
 
+  const handleCopyRestaurantId = useCallback(
+    async (id: string) => {
+      try {
+        await navigator.clipboard.writeText(id);
+        showSuccess(t('restaurants.restaurantIdCopied', { defaultValue: 'Restaurant ID copied' }));
+      } catch (error) {
+        logger.error('Error copying restaurant ID', error as Error, { restaurantId: id });
+        showError(t('restaurants.restaurantIdCopyFailed', { defaultValue: 'Failed to copy restaurant ID' }));
+      }
+    },
+    [showError, showSuccess, t]
+  );
+
   const handleStatistics = useCallback(() => {
     alert('Not implemented');
   }, []);
@@ -462,6 +476,12 @@ export const RestaurantsListPage = () => {
               </span>
             </Tooltip>
             <IconButton
+              onClick={() => handleCopyRestaurantId(restaurant.id)}
+              tooltip={t('restaurants.copyRestaurantId', { defaultValue: 'Copy restaurant ID' })}
+              size="small"
+              icon={<ContentCopyIcon />}
+            />
+            <IconButton
               onClick={() => handleEdit(restaurant.id)}
               tooltip={t('common.edit')}
               size="small"
@@ -500,6 +520,7 @@ export const RestaurantsListPage = () => {
       handleEdit,
       handleViewAudit,
       handleQRCodes,
+      handleCopyRestaurantId,
       handleStatistics,
       handleConfigurationErrors,
       t,
