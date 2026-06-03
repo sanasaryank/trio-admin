@@ -90,6 +90,14 @@ export const realRestaurantsApi = {
     return response.json();
   },
 
+  getQRSequenceNumber: async (restaurantId: string): Promise<{ data: number }> => {
+    const response = await realApiFetch(`${env.apiBaseUrl}/qrsequence/?rid=${restaurantId}`, {
+      method: 'GET',
+    });
+
+    return response.json();
+  },
+
   getLocations: async (): Promise<LocationsResponse> => {
     const response = await realApiFetch(LOCATIONS_BASE_URL, {
       method: 'GET',

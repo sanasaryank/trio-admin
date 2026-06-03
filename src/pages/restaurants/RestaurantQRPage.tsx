@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef, useEffect } from 'react';
+import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,6 +62,10 @@ const createQRBatchSchema = (t: (key: string) => string) => z.object({
     .min(1, t('validation.quantityMin'))
     .max(100, t('validation.quantityMax')),
   type: z.enum(['Static', 'Dynamic'], { message: t('validation.typeRequired') }),
+  sequenceNumber: z.preprocess(
+    (v) => (v === '' || v === undefined || v === null ? undefined : v),
+    z.coerce.number().int().positive().optional()
+  ),
 });
 
 type QRBatchFormData = z.infer<ReturnType<typeof createQRBatchSchema>>;
@@ -131,6 +135,9 @@ export const RestaurantQRPage = () => {
   // Filter drawer
   const filterDrawer = useDrawer();
 
+  // Sequence loading state
+  const [sequenceLoading, setSequenceLoading] = useState(false);
+
   // Create dialog
   const { showError } = useAppSnackbar();
   const [createDialogOpen, toggleCreateDialog] = useToggle(false);
@@ -152,6 +159,7 @@ export const RestaurantQRPage = () => {
     defaultValues: {
       quantity: 1,
       type: 'Static',
+      sequenceNumber: undefined,
     },
   });
 
@@ -265,10 +273,19 @@ export const RestaurantQRPage = () => {
     logContext: 'RestaurantQRPage',
   });
 
-  const handleOpenCreateDialog = useCallback(() => {
-    reset({ quantity: 1, type: 'Static' });
+  const handleOpenCreateDialog = useCallback(async () => {
     toggleCreateDialog();
-  }, [reset, toggleCreateDialog]);
+    setSequenceLoading(true);
+    try {
+      const result = await restaurantsApi.getQRSequenceNumber(id);
+      reset({ quantity: 1, type: 'Static', sequenceNumber: result.data });
+    } catch (error) {
+      logger.error('Error loading sequence number', error as Error, { restaurantId: id });
+      reset({ quantity: 1, type: 'Static', sequenceNumber: undefined });
+    } finally {
+      setSequenceLoading(false);
+    }
+  }, [id, reset, toggleCreateDialog]);
 
   const handleCloseCreateDialog = useCallback(() => {
     toggleCreateDialog();
@@ -280,7 +297,7 @@ export const RestaurantQRPage = () => {
       if (!id) return;
 
       try {
-        await restaurantsApi.createQRBatch(id, { count: data.quantity, type: data.type });
+        await restaurantsApi.createQRBatch(id, { count: data.quantity, type: data.type, sequenceNumber: data.sequenceNumber ?? undefined });
         await loadQRCodes();
         handleCloseCreateDialog();
         tableState.handlePageChange(0);
@@ -358,6 +375,13 @@ export const RestaurantQRPage = () => {
             return <span>-</span>;
           }
         },
+      },
+      {
+        id: 'seq',
+        label: t('restaurants.sequentialNumber'),
+        sortable: false,
+        width: 60,
+        render: (qr) => <span>{qr?.seq ?? '-'}</span>,
       },
       {
         id: 'assigned',
@@ -541,7 +565,8 @@ export const RestaurantQRPage = () => {
             <Button
               variant="contained"
               color="primary"
-              loading={isSubmitting}
+              loading={isSubmitting || sequenceLoading}
+              disabled={sequenceLoading}
               onClick={() => createQRFormRef.current?.requestSubmit()}
             >
               {t('common.create')}
@@ -559,7 +584,7 @@ export const RestaurantQRPage = () => {
           ref={createQRFormRef}
           onSubmit={handleSubmit(handleCreateQRBatch, (errors) => scrollToFirstError(errors, createDialogContentRef.current))}
           noValidate
-          sx={{ pt: 1 }}
+          sx={{ pt: 2, pb: 2 }}
         >
           <FormField
             name="quantity"
@@ -581,6 +606,15 @@ export const RestaurantQRPage = () => {
                 { value: 'Static', label: t('restaurants.static') },
                 { value: 'Dynamic', label: t('restaurants.dynamic') },
               ]}
+            />
+          </Box>
+          <Box sx={{ mt: 2 }}>
+            <FormField
+              name="sequenceNumber"
+              control={control}
+              label={t('restaurants.sequentialNumberBegin')}
+              type="number"
+              disabled={isSubmitting || sequenceLoading}
             />
           </Box>
         </Box>

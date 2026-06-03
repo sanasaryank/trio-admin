@@ -1,6 +1,6 @@
 /**
  * Zips the out/ folder for deployment.
- * Usage: node scripts/zip-build.js [dev|stage|prod]
+ * Usage: bun scripts/zip-build.js [dev|stage|prod]
  * Output: {env}-{version}.zip (e.g. dev-1.0.2.zip)
  */
 import { createRequire } from 'node:module';
@@ -20,7 +20,7 @@ const zipName = `${env}-${version}.zip`;
 const zipPath = resolve(root, zipName);
 
 if (!existsSync(outDir)) {
-  console.error('out/ folder not found. Run a build first (e.g. npm run build:dev).');
+  console.error('out/ folder not found. Run a build first (e.g. bun run build:dev).');
   process.exit(1);
 }
 

@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { Button as MuiButton, CircularProgress } from '@mui/material';
+import { Button as MuiButton, CircularProgress, Box } from '@mui/material';
 
 /**
  * Props для универсальной кнопки
@@ -70,14 +70,14 @@ const Button: React.FC<ButtonProps> = React.memo(({
       type={type}
     >
       {loading ? (
-        <>
+        <Box sx={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ visibility: 'hidden' }}>{children}</Box>
           <CircularProgress
             size={size === 'small' ? 16 : size === 'large' ? 24 : 20}
             color="inherit"
-            sx={{ mr: 1 }}
+            sx={{ position: 'absolute' }}
           />
-          {children}
-        </>
+        </Box>
       ) : (
         children
       )}

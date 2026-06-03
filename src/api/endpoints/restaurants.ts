@@ -39,6 +39,10 @@ export const restaurantsApi = {
     return realRestaurantsApi.updateQRType(restaurantId, qrId, type);
   },
 
+  getQRSequenceNumber: (restaurantId: string): Promise<{ data: number }> => {
+    return realRestaurantsApi.getQRSequenceNumber(restaurantId);
+  },
+
   getLocations: (): Promise<LocationsResponse> => {
     return realRestaurantsApi.getLocations();
   },

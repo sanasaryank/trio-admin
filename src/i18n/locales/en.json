@@ -168,7 +168,9 @@
     "unblockConfirmTitle": "Unblock restaurant?",
     "blockConfirmMessage": "Are you sure you want to block restaurant {{name}}?",
     "unblockConfirmMessage": "Are you sure you want to unblock restaurant {{name}}?",
-    "campaignTargeting": "Campaign Targeting"
+    "campaignTargeting": "Campaign Targeting",
+    "sequentialNumber": "Sequential number",
+    "sequentialNumberBegin": "Sequential number begin"
   },
   "employees": {
     "title": "Employees",

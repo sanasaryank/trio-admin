@@ -134,15 +134,17 @@ export interface LocationsResponse {
 export type QRType = 'Static' | 'Dynamic';
 
 export interface QRCode extends BaseEntity {
-  hallId: string; // Comes from integration system
-  tableId: string; // Comes from integration system
-  qrText: string; // Comes from integration system
+  seq: number;
+  hallId: string;
+  tableId: string;
+  qrText: string;
   type: QRType;
 }
 
 export interface QRBatchCreateRequest {
   count: number;
   type: QRType;
+  sequenceNumber?: number;
 }
 
 // Audit Log

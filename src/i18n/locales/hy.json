@@ -158,6 +158,8 @@
     "blockConfirmMessage": "Վստա՞հ եք, որ ցանկանում եք արգելափակել \"{{name}}\" ռեստորանը։",
     "unblockConfirmMessage": "Համոզված ե՞ք, որ ցանկանում եք ապաարգելափակել \"{{name}}\" ռեստորանը։",
     "campaignTargeting": "Արշավների թիրախավորում",
+    "sequentialNumber": "Հերթական համար",
+    "sequentialNumberBegin": "Սկզբնական հերթական համար",
     "fields": {
       "name": "Ռեստորան",
       "city": "Քաղաք",

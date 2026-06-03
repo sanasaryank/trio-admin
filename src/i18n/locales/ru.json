@@ -158,6 +158,8 @@
     "blockConfirmMessage": "Вы уверены, что хотите заблокировать ресторан {{name}}?",
     "unblockConfirmMessage": "Вы уверены, что хотите разблокировать ресторан {{name}}?",
     "campaignTargeting": "Таргетинг кампаний",
+    "sequentialNumber": "Порядковый номер",
+    "sequentialNumberBegin": "Начальный порядковый номер",
     "fields": {
       "name": "Ресторан",
       "city": "Город",
