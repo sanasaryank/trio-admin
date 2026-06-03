@@ -62,10 +62,7 @@ const createQRBatchSchema = (t: (key: string) => string) => z.object({
     .min(1, t('validation.quantityMin'))
     .max(100, t('validation.quantityMax')),
   type: z.enum(['Static', 'Dynamic'], { message: t('validation.typeRequired') }),
-  sequenceNumber: z.preprocess(
-    (v) => (v === '' || v === undefined || v === null ? undefined : v),
-    z.coerce.number().int().positive().optional()
-  ),
+  sequenceNumber: z.number().int().positive().optional(),
 });
 
 type QRBatchFormData = z.infer<ReturnType<typeof createQRBatchSchema>>;
@@ -277,7 +274,7 @@ export const RestaurantQRPage = () => {
     toggleCreateDialog();
     setSequenceLoading(true);
     try {
-      const result = await restaurantsApi.getQRSequenceNumber(id);
+      const result = await restaurantsApi.getQRSequenceNumber(id!);
       reset({ quantity: 1, type: 'Static', sequenceNumber: result.data });
     } catch (error) {
       logger.error('Error loading sequence number', error as Error, { restaurantId: id });
