@@ -381,7 +381,7 @@ export const RestaurantQRPage = () => {
         label: t('restaurants.sequentialNumber'),
         sortable: false,
         width: 60,
-        render: (qr) => <span>{qr?.seq ?? '-'}</span>,
+        render: (qr) => <span>{qr?.sequenceNumber ?? '-'}</span>,
       },
       {
         id: 'assigned',

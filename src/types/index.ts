@@ -134,7 +134,7 @@ export interface LocationsResponse {
 export type QRType = 'Static' | 'Dynamic';
 
 export interface QRCode extends BaseEntity {
-  seq: number;
+  sequenceNumber: number;
   hallId: string;
   tableId: string;
   qrText: string;
