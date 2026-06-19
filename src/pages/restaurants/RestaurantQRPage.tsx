@@ -45,7 +45,6 @@ import { getStatusFilterOptions } from '../../utils/filterUtils';
 // Types
 import type { QRCode } from '../../types';
 
-type SortField = 'id' | 'assigned' | 'type';
 type StatusFilter = 'active' | 'blocked' | 'all';
 type AssignedFilter = 'assigned' | 'unassigned' | 'all';
 type TypeFilter = 'Static' | 'Dynamic' | 'all';
@@ -189,47 +188,22 @@ export const RestaurantQRPage = () => {
   const tableState = useTableState<QRCode>({
     data: filteredQRCodes || [],
     initialRowsPerPage: 10,
-    defaultSortColumn: 'id' as keyof QRCode,
+    defaultSortColumn: 'seq' as keyof QRCode,
     defaultSortDirection: 'asc',
-    persistenceKey: 'restaurant_qr',
+    persistenceKey: 'restaurant_qr_v2',
   });
 
-  // Custom sorting for QR codes
+  // QR codes always sorted by sequence number
   const sortedAndPaginatedData = useMemo(() => {
-    let sorted = [...filteredQRCodes];
-
-    if (tableState.sortColumn) {
-      sorted.sort((a, b) => {
-        let compareValue = 0;
-        const sortField = tableState.sortColumn as SortField;
-
-        switch (sortField) {
-          case 'id':
-            const aId = a.id != null ? String(a.id) : '';
-            const bId = b.id != null ? String(b.id) : '';
-            compareValue = aId.localeCompare(bId);
-            break;
-          case 'assigned':
-            const aAssigned = Boolean(a.hallId && a.tableId) ? 1 : 0;
-            const bAssigned = Boolean(b.hallId && b.tableId) ? 1 : 0;
-            compareValue = aAssigned - bAssigned;
-            break;
-          case 'type':
-            const aType = typeof a.type === 'string' ? a.type : 'Static';
-            const bType = typeof b.type === 'string' ? b.type : 'Static';
-            compareValue = aType.localeCompare(bType);
-            break;
-        }
-
-        return tableState.sortDirection === 'asc' ? compareValue : -compareValue;
-      });
-    }
+    const sorted = [...filteredQRCodes].sort((a, b) => {
+      const compareValue = (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0);
+      return tableState.sortDirection === 'asc' ? compareValue : -compareValue;
+    });
 
     const start = tableState.page * tableState.rowsPerPage;
     return sorted.slice(start, start + tableState.rowsPerPage);
   }, [
     filteredQRCodes,
-    tableState.sortColumn,
     tableState.sortDirection,
     tableState.page,
     tableState.rowsPerPage,
@@ -376,14 +350,14 @@ export const RestaurantQRPage = () => {
       {
         id: 'seq',
         label: t('restaurants.sequentialNumber'),
-        sortable: false,
+        sortable: true,
         width: 60,
         render: (qr) => <span>{qr?.sequenceNumber ?? '-'}</span>,
       },
       {
         id: 'assigned',
         label: t('restaurants.assigned'),
-        sortable: true,
+        sortable: false,
         render: (qr) => {
           try {
             const isAssigned = Boolean(qr?.hallId && qr?.tableId);
@@ -403,7 +377,7 @@ export const RestaurantQRPage = () => {
       {
         id: 'type',
         label: t('restaurants.qrType'),
-        sortable: true,
+        sortable: false,
         render: (qr) => {
           try {
             return (
