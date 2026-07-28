@@ -17,9 +17,10 @@ const handleUnauthorized = () => {
 };
 
 const getRequestHeaders = (overrides?: HeadersInit): HeadersInit => {
+  const xOrigin = import.meta.env.VITE_X_ORIGIN;
   const merged: Record<string, string> = {
     ...(getAuthHeaders() as Record<string, string>),
-    ...(import.meta.env.DEV ? { 'X-Origin': 'admin.trio.am' } : {}),
+    ...(xOrigin ? { 'X-Origin': xOrigin } : {}),
   };
   if (overrides) {
     if (overrides instanceof Headers) {

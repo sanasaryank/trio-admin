@@ -13,6 +13,7 @@ dist-ssr
 *.local
 out
 *-*.zip
+*.zip
 
 # Environment files
 .env
