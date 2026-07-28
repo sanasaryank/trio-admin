@@ -34,6 +34,10 @@ The wrapper consumes `--zip`, builds `dist/`, and creates
 directly at the ZIP root. `VERSION`, not `package.json`, supplies the release
 version.
 
+If adopting the release tooling in a project where `VERSION` does not yet
+exist, run `bun run version:init`. It creates the current UTC `YYYY.MM.1` and
+refuses to overwrite an existing file.
+
 ## Hosts and nginx
 
 | Channel | Host | Document base |

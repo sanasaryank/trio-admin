@@ -61,3 +61,16 @@ The three channel commands use exactly their named `.env.<channel>` file.
 - `VITE_SESSION_TIMEOUT`, `VITE_TOKEN_REFRESH_INTERVAL`
 
 Restart the local server after changing an environment file.
+
+## Release version
+
+`VERSION` is committed and is the authoritative CalVer release number. For a
+project adopting this tooling without a `VERSION` file:
+
+```bash
+bun run version:init
+```
+
+This creates the current UTC `YYYY.MM.1` and refuses to overwrite an existing
+file. Use `bun run version:validate` to check it and `bun run version:bump` for
+subsequent releases.

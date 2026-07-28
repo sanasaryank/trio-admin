@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "version:init": "bun scripts/version-init.js",
     "version:validate": "bun scripts/version-validate.js",
     "version:bump": "bun scripts/version-bump.js"
   },
