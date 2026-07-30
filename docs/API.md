@@ -23,8 +23,8 @@ No `/admin/` prefix. All endpoints are relative to base URL.
 
 | Environment | Base URL |
 |-------------|----------|
-| Dev         | `https://api.trio.am/dev` |
-| Stage       | `https://api.trio.am/stage` |
+| Dev         | `https://dev.api.trio.am` |
+| Stage       | `https://stage.api.trio.am` |
 | Production  | `https://api.trio.am` |
 
 ### Request Format

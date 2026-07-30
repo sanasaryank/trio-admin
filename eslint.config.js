@@ -15,6 +15,20 @@ export default tseslint.config(
   
   // TypeScript configuration
   ...tseslint.configs.recommended,
+
+  // Bun build/version scripts and Vite support modules.
+  {
+    files: ['scripts/**/*.js', 'vite-api-proxy*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        Bun: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
   
   // React and TypeScript specific rules
   {

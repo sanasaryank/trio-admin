@@ -110,8 +110,7 @@ TRIO SuperAdmin is a comprehensive administration platform for managing restaura
 
 ### Prerequisites
 
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0 or **yarn** >= 1.22.0
+- **Bun** >= 1.3
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 
 ### Installation
@@ -124,13 +123,13 @@ TRIO SuperAdmin is a comprehensive administration platform for managing restaura
 
 2. **Install dependencies**
    ```bash
-   npm install
+   bun install
    ```
 
 3. **Configure environment**
    ```bash
    # Copy example environment file
-   cp .env.example .env.development
+   cp .env.local.example .env.local
    
    # Edit environment variables as needed
    nano .env.development
@@ -138,7 +137,7 @@ TRIO SuperAdmin is a comprehensive administration platform for managing restaura
 
 4. **Start development server**
    ```bash
-   npm run dev
+   bun run local
    ```
 
 5. **Open browser**
@@ -148,19 +147,25 @@ TRIO SuperAdmin is a comprehensive administration platform for managing restaura
 
 ```bash
 # Development
-npm run dev              # Start dev server with hot reload
+bun run local              # Start dev server with .env.local
+bun run local:dev          # Start with exactly .env.dev
+bun run local:stage        # Start with exactly .env.stage
+bun run local:prod         # Start with exactly .env.prod
 
 # Building
-npm run build            # Production build
-npm run preview          # Preview production build
+bun run build:dev          # Build development channel
+bun run build:stage        # Build stage channel
+bun run build:prod         # Build production channel
+bun run build:prod --zip    # Build and optionally package
+bun run preview          # Preview production build
 
 # Code Quality
-npm run lint             # Run ESLint
+bun run lint             # Run ESLint
 
 # Testing
-npm run test             # Run tests
-npm run test:ui          # Run tests with UI
-npm run test:coverage    # Run tests with coverage
+bun run test             # Run tests
+bun run test:ui          # Run tests with UI
+bun run test:coverage    # Run tests with coverage
 ```
 
 ## 📁 Project Structure
@@ -367,8 +372,8 @@ No `/admin/` prefix. Paths are relative to base URL:
 
 | Environment | Base URL |
 |-------------|---------|
-| Dev | `https://api.trio.am/dev` |
-| Stage | `https://api.trio.am/stage` |
+| Dev | `https://dev.api.trio.am` |
+| Stage | `https://stage.api.trio.am` |
 | Production | `https://api.trio.am` |
 
 ### Key Endpoints
@@ -527,19 +532,19 @@ VITE_LOG_LEVEL=debug
 
 ```bash
 # Run all tests
-npm run test
+bun run test
 
 # Run with UI
-npm run test:ui
+bun run test:ui
 
 # Run with coverage
-npm run test:coverage
+bun run test:coverage
 
 # Run specific test file
-npm run test -- useDebounce.test.ts
+bun run test -- useDebounce.test.ts
 
 # Watch mode
-npm run test -- --watch
+bun run test -- --watch
 ```
 
 ### Writing Tests
@@ -594,16 +599,16 @@ describe('useDebounce', () => {
 
 ```bash
 # Build for production
-npm run build
+bun run build
 
 # Preview production build locally
-npm run preview
+bun run preview
 ```
 
 ### Build Output
 
 ```
-out/
+dist/
 ├── assets/
 │   ├── index-[hash].js
 │   ├── index-[hash].css
@@ -642,7 +647,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
-RUN npm run build
+RUN bun run build
 CMD ["npm", "run", "preview"]
 ```
 

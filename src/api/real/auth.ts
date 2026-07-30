@@ -13,12 +13,13 @@ export const realAuthApi = {
     
     // Server will set HttpOnly cookie named "admin_token"
     // Note: We don't use realApiFetch here to avoid 401 redirect during login
+    const xOrigin = import.meta.env.VITE_X_ORIGIN;
     const response = await fetch(`${AUTH_BASE_URL}/login`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/json',
-        ...(import.meta.env.DEV ? { 'X-Origin': 'admin.trio.am' } : {}),
+        ...(xOrigin ? { 'X-Origin': xOrigin } : {}),
       },
       credentials: 'include', // Important: include cookies in request
     });

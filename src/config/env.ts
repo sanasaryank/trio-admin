@@ -16,7 +16,10 @@ const envSchema = z.object({
   appVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
 
   // API
-  apiBaseUrl: z.string().url(),
+  apiBaseUrl: z.string().refine(
+    value => value.startsWith('/') || URL.canParse(value),
+    'Expected an absolute URL or root-relative path',
+  ),
   apiTimeout: z.number().positive(),
 
   // Features
@@ -83,7 +86,7 @@ const rawEnv = {
   appVersion: getEnv('VITE_APP_VERSION', '1.0.0'),
 
   // API
-  apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://localhost:3000/api'),
+  apiBaseUrl: getEnv('VITE_API_BASE_URL', 'https://dev.api.trio.am'),
   apiTimeout: getEnvNumber('VITE_API_TIMEOUT', 30000),
 
   // Features

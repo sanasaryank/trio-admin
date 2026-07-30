@@ -202,10 +202,10 @@ npm install
 cp .env.example .env.development
 
 # 3. Start dev server
-npm run dev
+bun run local
 
 # 4. Run tests in watch mode
-npm run test -- --watch
+bun run test -- --watch
 ```
 
 ### Code Review Process
