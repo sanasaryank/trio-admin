@@ -30,8 +30,8 @@ const DEFAULT_CENTER: [number, number] = [
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface LocationPickerProps {
-  lat: number;
-  lng: number;
+  lat: string;
+  lng: string;
   onChange: (lat: number, lng: number) => void;
   onAddressChange?: (address: string) => void;
   onLocationMetadataChange?: (metadata: { city?: string; district?: string }) => void;
@@ -294,8 +294,10 @@ export const LocationPicker = React.memo<LocationPickerProps>(
     const searchContainerRef = useRef<HTMLDivElement>(null);
 
     // ── coordinate helpers ──
-    const isValidCoordinates = lat !== 0 && lng !== 0 && lat !== null && lng !== null;
-    const initialPosition: [number, number] = isValidCoordinates ? [lat, lng] : DEFAULT_CENTER;
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    const isValidCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude) && latitude !== 0 && longitude !== 0;
+    const initialPosition: [number, number] = isValidCoordinates ? [latitude, longitude] : DEFAULT_CENTER;
 
     // ── local state ──
     const [position, setPosition] = useState<[number, number]>(initialPosition);
@@ -316,9 +318,8 @@ export const LocationPicker = React.memo<LocationPickerProps>(
 
     // ── sync position from props ──
     useEffect(() => {
-      const isValid = lat !== 0 && lng !== 0 && lat !== null && lng !== null;
-      setPosition(isValid ? [lat, lng] : DEFAULT_CENTER);
-    }, [lat, lng]);
+      setPosition(isValidCoordinates ? [latitude, longitude] : DEFAULT_CENTER);
+    }, [isValidCoordinates, latitude, longitude]);
 
     // ── close dropdown on outside click ──
     useEffect(() => {

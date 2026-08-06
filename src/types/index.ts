@@ -111,8 +111,8 @@ export interface Restaurant extends EntityWithHash {
   districtId: string;
   legalAddress: string;
   tin: string;
-  lat: number;
-  lng: number;
+  lat: string;
+  lng: string;
   typeId: string[]; // restaurant-types
   priceSegmentId: string[]; // price-segments
   menuTypeId: string[]; // menu-types
@@ -250,8 +250,8 @@ export interface RestaurantFormData {
   districtId: string;
   legalAddress: string;
   tin: string;
-  lat: number;
-  lng: number;
+  lat: string;
+  lng: string;
   typeId: string[];
   priceSegmentId: string[];
   menuTypeId: string[];
