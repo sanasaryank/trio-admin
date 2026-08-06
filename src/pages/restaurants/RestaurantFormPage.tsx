@@ -47,8 +47,8 @@ const createRestaurantSchema = (t: (key: string) => string) => z.object({
     .min(8, t('validation.tinLength'))
     .max(8, t('validation.tinMaxLength'))
     .regex(/^\d+$/, t('validation.tinDigitsOnly')),
-  lat: z.number(),
-  lng: z.number(),
+  lat: z.string(),
+  lng: z.string(),
   typeId: z.array(z.string()).min(1, t('validation.selectRestaurantType')),
   priceSegmentId: z.array(z.string()).min(1, t('validation.selectPriceSegment')),
   menuTypeId: z.array(z.string()).min(1, t('validation.selectMenuType')),
@@ -140,8 +140,8 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
       districtId: '',
       legalAddress: '',
       tin: '',
-      lat: 40.1792, // Default: Yerevan
-      lng: 44.4991,
+      lat: '40.1792', // Default: Yerevan
+      lng: '44.4991',
       typeId: [],
       priceSegmentId: [],
       menuTypeId: [],
@@ -381,8 +381,8 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
 
   const handleLocationChange = useCallback(
     (lat: number, lng: number) => {
-      setValue('lat', lat);
-      setValue('lng', lng);
+      setValue('lat', String(lat));
+      setValue('lng', String(lng));
     },
     [setValue]
   );
