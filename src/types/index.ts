@@ -109,6 +109,7 @@ export interface Restaurant extends EntityWithHash {
   countryId: string;
   cityId: string;
   districtId: string;
+  address: DictionaryName;
   legalAddress: string;
   tin: string;
   lat: string;
@@ -248,6 +249,7 @@ export interface RestaurantFormData {
   countryId: string;
   cityId: string;
   districtId: string;
+  address: DictionaryName;
   legalAddress: string;
   tin: string;
   lat: string;

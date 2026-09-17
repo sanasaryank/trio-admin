@@ -41,6 +41,11 @@ const createRestaurantSchema = (t: (key: string) => string) => z.object({
   countryId: z.string().min(1, t('validation.selectCountry')),
   cityId: z.string().min(1, t('validation.selectCity')),
   districtId: z.string().min(1, t('validation.selectDistrict')),
+  address: z.object({
+    ARM: z.string().min(1, t('validation.addressRequired')),
+    RUS: z.string().min(1, t('validation.addressRequired')),
+    ENG: z.string().min(1, t('validation.addressRequired')),
+  }),
   legalAddress: z.string().min(1, t('validation.legalAddressRequired')),
   tin: z.string()
     .min(1, t('validation.tinRequired'))
@@ -138,6 +143,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
       countryId: '',
       cityId: '',
       districtId: '',
+      address: { ARM: '', RUS: '', ENG: '' },
       legalAddress: '',
       tin: '',
       lat: '40.1792', // Default: Yerevan
@@ -220,6 +226,9 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
         countryId: String(restaurant.countryId),
         cityId: String(restaurant.cityId),
         districtId: String(restaurant.districtId),
+        address: typeof restaurant.address === 'string'
+          ? { ARM: restaurant.address, RUS: restaurant.address, ENG: restaurant.address }
+          : restaurant.address,
         legalAddress: restaurant.legalAddress,
         tin: restaurant.tin,
         lat: restaurant.lat,
@@ -319,6 +328,7 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
             countryId: formData.countryId,
             cityId: formData.cityId,
             districtId: formData.districtId,
+            address: formData.address,
             legalAddress: formData.legalAddress,
             tin: formData.tin,
             lat: formData.lat,
@@ -706,6 +716,87 @@ export const RestaurantFormPage = forwardRef<RestaurantFormHandle, RestaurantFor
               selectedCityId={selectedCityId}
               selectedDistrictId={watch('districtId')}
             />
+          </Grid>
+
+          <Grid size={12}>
+            <Box>
+              <Typography variant="caption" sx={{ mb: 1, display: 'block', color: 'text.secondary' }}>
+                {t('restaurants.address')} *
+              </Typography>
+
+              <Box sx={{ mb: 1.5 }}>
+                <Controller
+                  name="address.ARM"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label=""
+                      type="text"
+                      error={!!(errors as any)?.address?.ARM}
+                      helperText={(errors as any)?.address?.ARM?.message}
+                      required
+                      disabled={isSubmitting}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Box component="span" sx={{ fontSize: '1.5rem', lineHeight: 1 }}>🇦🇲</Box>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                />
+              </Box>
+
+              <Box sx={{ mb: 1.5 }}>
+                <Controller
+                  name="address.ENG"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label=""
+                      type="text"
+                      error={!!(errors as any)?.address?.ENG}
+                      helperText={(errors as any)?.address?.ENG?.message}
+                      required
+                      disabled={isSubmitting}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Box component="span" sx={{ fontSize: '1.5rem', lineHeight: 1 }}>🇺🇸</Box>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                />
+              </Box>
+
+              <Controller
+                name="address.RUS"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label=""
+                    type="text"
+                    error={!!(errors as any)?.address?.RUS}
+                    helperText={(errors as any)?.address?.RUS?.message}
+                    required
+                    disabled={isSubmitting}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Box component="span" sx={{ fontSize: '1.5rem', lineHeight: 1 }}>🇷🇺</Box>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                )}
+              />
+            </Box>
           </Grid>
 
           <Grid size={{ xs: 12, sm: 6 }}>
