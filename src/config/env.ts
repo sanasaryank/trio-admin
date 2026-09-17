@@ -36,6 +36,7 @@ const envSchema = z.object({
     lng: z.number().min(-180).max(180),
   }),
   mapDefaultZoom: z.number().min(1).max(20),
+  googleMapsApiKey: z.string(),
 
   // Session
   sessionTimeout: z.number().positive(),
@@ -103,6 +104,8 @@ const rawEnv = {
     lng: getEnvNumber('VITE_MAP_DEFAULT_CENTER_LNG', 44.4991),
   },
   mapDefaultZoom: getEnvNumber('VITE_MAP_DEFAULT_ZOOM', 12),
+  // Browser key: restrict by HTTP referrer and Maps/Places APIs in Google Cloud.
+  googleMapsApiKey: getEnv('VITE_GOOGLE_MAPS_API_KEY', ''),
 
   // Session
   sessionTimeout: getEnvNumber('VITE_SESSION_TIMEOUT', 3600000),

@@ -58,6 +58,8 @@ The three channel commands use exactly their named `.env.<channel>` file.
 - `VITE_DEBUG_MODE`, `VITE_LOG_LEVEL`
 - `VITE_MAP_DEFAULT_CENTER_LAT`, `VITE_MAP_DEFAULT_CENTER_LNG`,
   `VITE_MAP_DEFAULT_ZOOM`
+- `VITE_GOOGLE_MAPS_API_KEY` (optional restricted browser key for the Google
+  Maps location-picker prototype)
 - `VITE_SESSION_TIMEOUT`, `VITE_TOKEN_REFRESH_INTERVAL`
 
 Restart the local server after changing an environment file.

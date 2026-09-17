@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Google Map with Pin</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: Arial, sans-serif;
+        background: #f3f6fb;
+      }
+
+      .map-frame {
+        position: relative;
+        width: min(100%, 600px);
+        aspect-ratio: 4 / 3;
+        border: 1px solid #ccd6e0;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #dce8ff;
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }
+
+      .location-pin {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -100%);
+        width: 32px;
+        height: 32px;
+        pointer-events: none;
+      }
+
+      .location-pin svg {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="map-frame" aria-label="Map with location pin">
+      <iframe
+        src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d254.30961625571214!2d44.50432343069422!3d40.18077895398195!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1shy!2sam!4v1786108675101!5m2!1shy!2sam"
+        width="600"
+        height="450"
+        style="border:0;"
+        allowfullscreen=""
+        loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+      <div class="location-pin" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img" aria-label="Location pin">
+          <path
+            d="M12 2C8.13 2 5 5.13 5 9c0 5 7 13 7 13s7-8 7-13c0-3.87-3.13-7-7-7Zm0 18.95S6 13.44 6 9a6 6 0 1 1 12 0c0 4.44-6 11.95-6 11.95Zm0-9.95a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 12 11Z"
+            fill="#d32f2f"
+          />
+          <circle cx="12" cy="9" r="2" fill="#fff" />
+        </svg>
+      </div>
+    </div>
+  </body>
+</html>

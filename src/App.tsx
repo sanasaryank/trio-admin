@@ -21,6 +21,7 @@ const EmployeeFormPage = lazy(() => import('./pages/employees/EmployeeFormPage')
 const RestaurantsListPage = lazy(() => import('./pages/restaurants/RestaurantsListPage').then(m => ({ default: m.RestaurantsListPage })));
 const RestaurantFormPage = lazy(() => import('./pages/restaurants/RestaurantFormPage').then(m => ({ default: m.RestaurantFormPage })));
 const RestaurantQRPage = lazy(() => import('./pages/restaurants/RestaurantQRPage').then(m => ({ default: m.RestaurantQRPage })));
+const LocationPickerPrototypePage = lazy(() => import('./pages/restaurants/LocationPickerPrototypePage').then(m => ({ default: m.LocationPickerPrototypePage })));
 const DictionariesPage = lazy(() => import('./pages/dictionaries/DictionariesPage').then(m => ({ default: m.DictionariesPage })));
 const StatisticsPage = lazy(() => import('./pages/statistics/StatisticsPage').then(m => ({ default: m.StatisticsPage })));
 
@@ -77,6 +78,10 @@ function App() {
                         <RestaurantFormPage />
                       </ErrorBoundary>
                     }
+                  />
+                  <Route
+                    path="restaurants/location-picker-prototype"
+                    element={import.meta.env.DEV ? <LocationPickerPrototypePage /> : <Navigate to="/restaurants" replace />}
                   />
                   <Route
                     path="restaurants/:id/edit"
